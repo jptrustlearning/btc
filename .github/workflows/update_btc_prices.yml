@@ -1,0 +1,59 @@
+name: Daily BTC Price Update
+
+on:
+  schedule:
+    # ทุกวัน 00:30 UTC (07:30 เวลาไทย) — หลัง daily candle ปิดที่ 00:00 UTC
+    - cron: '30 0 * * *'
+  workflow_dispatch:
+    inputs:
+      backfill:
+        description: 'Backfill all history from 2017?'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+jobs:
+  update-prices:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.BTC_PAT }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install requests pandas yfinance
+
+      - name: Fetch and update BTC prices
+        run: |
+          if [ "${{ github.event.inputs.backfill }}" = "true" ]; then
+            python3 update_btc_prices.py --backfill
+          else
+            python3 update_btc_prices.py
+          fi
+
+      - name: Commit and push
+        run: |
+          git config user.email "jptrustlearning@users.noreply.github.com"
+          git config user.name "JP Trust Learning"
+          git add btc_prices.csv
+          # Only commit if there are changes
+          git diff --cached --quiet || (
+            TIMESTAMP=$(date -u +"%Y-%m-%d")
+            ROWS=$(tail -n +2 btc_prices.csv | wc -l)
+            LATEST=$(tail -1 btc_prices.csv | cut -d',' -f1)
+            PRICE=$(tail -1 btc_prices.csv | cut -d',' -f5)
+            git commit -m "🪙 BTC prices ${ROWS} rows | \$${PRICE} @ ${LATEST}"
+            git push
+          )
