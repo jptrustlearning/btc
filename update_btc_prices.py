@@ -133,8 +133,7 @@ def main():
     if os.path.exists(csv_path) and not backfill:
         df_existing = pd.read_csv(csv_path, encoding='utf-8-sig')
         df_existing.columns = ENG_COLUMNS
-        df_existing['Date'] = pd.to_datetime(df_existing['Date'])
-        last_date = df_existing['Date'].max()
+        last_date = pd.to_datetime(df_existing['Date']).max()
         start_date = (last_date + timedelta(days=1)).replace(tzinfo=timezone.utc)
         print(f"📂 Existing: {len(df_existing)} rows, last: {last_date.date()}")
     else:
@@ -158,16 +157,16 @@ def main():
     elif force_source == 'binance':
         df_new = fetch_binance(start_date)
     else:
-        # Auto: try Binance first, fallback to yfinance
+        # Auto: try yfinance first (Binance often blocked), fallback to Binance
         try:
-            df_new = fetch_binance(start_date)
+            df_new = fetch_yfinance(start_date)
         except Exception as e:
-            print(f"⚠️  Binance failed: {e}")
-            print("🔄 Falling back to yfinance ...")
+            print(f"⚠️  yfinance failed: {e}")
+            print("🔄 Falling back to Binance ...")
             try:
-                df_new = fetch_yfinance(start_date)
+                df_new = fetch_binance(start_date)
             except Exception as e2:
-                print(f"❌ yfinance also failed: {e2}")
+                print(f"❌ Binance also failed: {e2}")
                 return
     
     if df_new.empty:
@@ -185,23 +184,26 @@ def main():
     new_count = len(df_new)
     
     # ===== Merge =====
-    df_new['Date'] = pd.to_datetime(df_new['Date'])
+    # Ensure Date is string for both dataframes before concat
+    df_new['Date'] = pd.to_datetime(df_new['Date']).dt.strftime('%Y-%m-%d')
+    if not df_existing.empty:
+        df_existing['Date'] = pd.to_datetime(df_existing['Date']).dt.strftime('%Y-%m-%d')
+    
     df_all = pd.concat([df_existing, df_new], ignore_index=True)
     df_all = df_all.drop_duplicates(subset='Date', keep='last')
     df_all = df_all.sort_values('Date').reset_index(drop=True)
     
     # ===== Save (Thai headers เหมือน gold repo) =====
     df_out = df_all.copy()
-    df_out['Date'] = df_out['Date'].dt.strftime('%Y-%m-%d')
     df_out.columns = THAI_COLUMNS
     df_out.to_csv(csv_path, index=False, encoding='utf-8-sig')
     
     latest_price = df_all['Close'].iloc[-1]
-    latest_date = df_all['Date'].max().strftime('%Y-%m-%d')
+    latest_date = df_all['Date'].iloc[-1]
     
     print(f"\n{'='*50}")
     print(f"✅ Saved: {len(df_all)} total rows")
-    print(f"📅 Range: {df_all['Date'].min().date()} → {df_all['Date'].max().date()}")
+    print(f"📅 Range: {df_all['Date'].iloc[0]} → {df_all['Date'].iloc[-1]}")
     print(f"🏷️  Latest: ${latest_price:,.1f} @ {latest_date}")
     print(f"📊 New rows added: +{new_count}")
     print(f"{'='*50}")
