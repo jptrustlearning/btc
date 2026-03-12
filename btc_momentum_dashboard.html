@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BTC Momentum Dashboard | JP Trust Learning</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B0E11;--bg2:#111518;--bg3:#181D22;--card:#151A1F;
+  --border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.1);
+  --gold:#F7931A;--gold2:#E8850F;--gold-dim:rgba(247,147,26,.15);--gold-glow:rgba(247,147,26,.3);
+  --emerald:#34D399;--emerald-dim:rgba(52,211,153,.15);
+  --red:#F87171;--red-dim:rgba(248,113,113,.15);
+  --blue:#60A5FA;--blue-dim:rgba(96,165,250,.15);
+  --purple:#A78BFA;--purple-dim:rgba(167,139,250,.15);
+  --orange:#FB923C;--orange-dim:rgba(251,146,60,.15);
+  --cyan:#22D3EE;--cyan-dim:rgba(34,211,238,.15);
+  --text:#E8E6E1;--text2:#9CA3AF;--text3:#6B7280;
+  --font-h:'DM Serif Display',serif;--font-b:'Instrument Sans',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;font-size:14px;line-height:1.5}
+.container{max-width:1200px;margin:0 auto;padding:24px}
+
+.header{text-align:center;padding:40px 0 30px;position:relative}
+.header::before{content:'';position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:700px;height:350px;background:radial-gradient(ellipse,rgba(247,147,26,.08) 0%,rgba(247,147,26,.02) 40%,transparent 70%);pointer-events:none}
+.header h1{font-family:var(--font-h);font-size:clamp(2rem,5vw,3.2rem);background:linear-gradient(135deg,#F7931A,#FFB347,#F7931A,#E8850F);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:1px;margin-bottom:6px}
+.header .sub{font-size:.88rem;color:var(--text2);letter-spacing:3px;text-transform:uppercase;margin-bottom:14px}
+.header .period{display:inline-block;padding:7px 24px;background:var(--bg3);border:1px solid var(--border2);border-radius:100px;color:var(--text2);font-size:.82rem}
+
+.status-bar{display:flex;justify-content:center;gap:12px;margin-bottom:24px;flex-wrap:wrap;align-items:center}
+.status-indicator{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.82rem;padding:7px 18px;border-radius:50px;background:rgba(255,255,255,.03);border:1px solid var(--border2);transition:.3s}
+.status-indicator.loading{color:var(--gold);border-color:var(--gold);background:var(--gold-dim)}
+.status-indicator.success{color:var(--emerald);border-color:var(--emerald);background:var(--emerald-dim)}
+.status-indicator.error{color:var(--red);border-color:var(--red);background:var(--red-dim)}
+
+.hero{display:flex;justify-content:center;align-items:center;gap:40px;margin-bottom:30px;flex-wrap:wrap}
+.hero-score{text-align:center;position:relative}
+.hero-score .ring{width:200px;height:200px;position:relative}
+.hero-score .ring canvas{position:absolute;top:0;left:0}
+.hero-score .center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.hero-score .center .v{font-family:var(--font-h);font-size:3rem;line-height:1}
+.hero-score .center .l{font-size:.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px}
+.hero-tier{text-align:center}
+.hero-tier .tier{font-family:var(--font-h);font-size:2rem;margin-bottom:4px}
+.hero-tier .price{font-size:1.4rem;color:var(--gold);font-weight:700;margin-bottom:2px}
+.hero-tier .price-label{font-size:.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px}
+.hero-delta{text-align:center;padding:16px 24px;background:var(--card);border:1px solid var(--border2);border-radius:14px}
+.hero-delta .v{font-family:var(--font-h);font-size:1.8rem;line-height:1.2}
+.hero-delta .l{font-size:.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px}
+.hero-delta .sub{font-size:.75rem;color:var(--text3);margin-top:6px}
+
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:24px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 14px;text-align:center;position:relative;overflow:hidden}
+.stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:.5}
+.stat-card.gold::after{background:var(--gold)}.stat-card.green::after{background:var(--emerald)}.stat-card.red::after{background:var(--red)}.stat-card.blue::after{background:var(--blue)}.stat-card.purple::after{background:var(--purple)}.stat-card.orange::after{background:var(--orange)}.stat-card.cyan::after{background:var(--cyan)}
+.stat-card .v{font-family:var(--font-h);font-size:1.5rem;line-height:1.2}
+.stat-card .l{font-size:.66rem;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;margin-top:3px}
+
+.section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px}
+.section-title{font-family:var(--font-h);font-size:1.15rem;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.section-title .dot{width:6px;height:6px;border-radius:50%;background:var(--gold)}
+.charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;margin-bottom:20px}
+.chart-box{height:320px;position:relative}
+
+.dim-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
+.dim-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px 12px;text-align:center;position:relative;overflow:hidden}
+.dim-card .score{font-family:var(--font-h);font-size:1.8rem;line-height:1}
+.dim-card .max{font-size:.72rem;color:var(--text3);margin-top:2px}
+.dim-card .name{font-size:.72rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-top:8px;font-weight:600}
+.dim-card .bar{width:100%;height:4px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:8px;overflow:hidden}
+.dim-card .bar .fill{height:100%;border-radius:2px;transition:width .8s ease}
+
+.ret-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
+.ret-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 10px;text-align:center}
+.ret-card .period{font-size:.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;font-weight:600}
+.ret-card .val{font-size:1.1rem;font-weight:700}
+.ret-card .pctl{font-size:.72rem;color:var(--text3);margin-top:4px}
+.pos{color:var(--emerald)}.neg{color:var(--red)}.neu{color:var(--text2)}
+
+.macro-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.macro-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:18px;position:relative;overflow:hidden}
+.macro-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:2px 2px 0 0}
+.macro-card.dxy::before{background:linear-gradient(90deg,#60A5FA,#818CF8)}
+.macro-card.vix::before{background:linear-gradient(90deg,#FB923C,#F87171)}
+.macro-card .macro-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.macro-card .macro-label{font-size:.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;font-weight:600}
+.macro-card .macro-value{font-family:var(--font-h);font-size:1.6rem}
+.macro-card .macro-signal{display:inline-block;padding:5px 12px;border-radius:8px;font-size:.78rem;font-weight:600;margin-top:6px;line-height:1.4}
+.macro-card .macro-note{font-size:.72rem;color:var(--text3);margin-top:8px}
+
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+.info-item{display:flex;justify-content:space-between;padding:10px 14px;background:var(--bg3);border-radius:8px;font-size:.82rem}
+.info-item .k{color:var(--text3)}.info-item .v{font-weight:600}
+
+.penalty-box{padding:16px 20px;border-radius:12px;margin-bottom:16px}
+.penalty-box.clean{background:var(--emerald-dim);border:1px solid rgba(52,211,153,.2)}
+.penalty-box.warn{background:var(--red-dim);border:1px solid rgba(248,113,113,.2)}
+.penalty-box .title{font-weight:700;font-size:.82rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.penalty-box.clean .title{color:var(--emerald)}
+.penalty-box.warn .title{color:var(--red)}
+.penalty-box .desc{font-size:.82rem;color:var(--text2)}
+
+.tier-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;justify-content:center}
+.tier-chip{padding:5px 14px;border-radius:7px;font-size:.72rem;font-weight:700;letter-spacing:.4px}
+
+.method-grid{display:flex;flex-wrap:wrap;gap:12px}
+.method-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px;flex:1 1 calc(33.33% - 12px);min-width:250px;box-sizing:border-box}
+.method-card .title{font-weight:700;font-size:.82rem;color:var(--gold);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px}
+.method-card .body{font-size:.78rem;color:var(--text2);line-height:1.6}
+
+/* Scenario Reference Table */
+.scenario-table-wrap{overflow-x:auto}
+.scenario-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.scenario-table thead th{font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;font-weight:700;padding:12px 10px;text-align:left;border-bottom:2px solid var(--border2);background:rgba(255,255,255,.02);white-space:nowrap}
+.scenario-table tbody td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top}
+.scenario-table tbody tr:last-child td{border-bottom:none}
+.scenario-table tbody tr:hover{background:rgba(255,255,255,.02)}
+.scenario-table tbody tr.current-scenario{background:rgba(247,147,26,.08);border-left:3px solid var(--gold)}
+.scenario-table .sc-num{font-weight:700;color:var(--text3);text-align:center;font-size:.75rem}
+.scenario-table .sc-icon{font-size:1.1rem;text-align:center}
+.scenario-table .sc-signal{font-weight:700;font-size:.82rem;white-space:nowrap}
+.scenario-table .sc-thai{font-size:.75rem;color:var(--text2);margin-top:2px}
+.scenario-table .sc-cond{font-size:.72rem;color:var(--text3);line-height:1.5}
+.scenario-table .sc-cond-th{font-size:.72rem;color:var(--text2);margin-top:3px;line-height:1.5}
+.scenario-table .sc-meaning{font-size:.75rem;color:var(--text2);line-height:1.5}
+.scenario-table .sc-action{font-weight:800;font-size:.72rem;letter-spacing:1.5px;text-align:center;padding:4px 10px;border-radius:5px;display:inline-block}
+.scenario-table .sc-action.buy{color:#0B0E11;background:var(--emerald)}
+.scenario-table .sc-action.sell{color:#0B0E11;background:var(--red)}
+.scenario-table .sc-action.hold{color:#0B0E11;background:var(--gold)}
+.scenario-table .sc-current-tag{display:inline-block;font-size:.6rem;background:var(--gold);color:#0B0E11;padding:2px 8px;border-radius:4px;font-weight:800;letter-spacing:.8px;margin-left:6px;vertical-align:middle}
+
+/* ========== PIVOT ZONE ========== */
+.pivot-chart-wrap{display:flex;flex-direction:column;gap:14px}
+@keyframes pulseDot{0%,100%{box-shadow:0 0 6px var(--gold-glow)}50%{box-shadow:0 0 16px var(--gold),0 0 30px var(--gold-glow)}}
+.pivot-tabs{display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap}
+.pivot-tab{padding:8px 20px;border-radius:8px;font-size:.78rem;font-weight:700;letter-spacing:.8px;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text3);transition:all .2s;text-transform:uppercase;user-select:none}
+.pivot-tab:hover{background:var(--card);color:var(--text);border-color:var(--border2)}
+.pivot-tab.active{color:var(--bg);border-color:transparent}
+.pivot-tab.active[data-tab="conf"]{background:var(--orange);box-shadow:0 0 12px rgba(251,146,60,.3)}
+.pivot-tab.active[data-tab="D1"]{background:var(--gold);box-shadow:0 0 12px rgba(247,147,26,.3)}
+.pivot-tab.active[data-tab="W1"]{background:var(--blue);box-shadow:0 0 12px rgba(96,165,250,.3)}
+.pivot-tab.active[data-tab="MN"]{background:var(--purple);box-shadow:0 0 12px rgba(167,139,250,.3)}
+.pivot-tab .tab-count{display:inline-block;font-size:.62rem;background:rgba(255,255,255,.2);padding:1px 6px;border-radius:4px;margin-left:4px}
+.bias-signal{text-align:center;width:100%}
+.bias-badge{display:inline-flex;align-items:center;gap:10px;padding:10px 24px;border-radius:12px;font-weight:700;font-size:.88rem;letter-spacing:.6px;border:1px solid}
+.bias-badge.bullish{color:var(--emerald);border-color:rgba(52,211,153,.3);background:var(--emerald-dim)}
+.bias-badge.bearish{color:var(--red);border-color:rgba(248,113,113,.3);background:var(--red-dim)}
+.bias-badge.neutral{color:var(--gold);border-color:rgba(247,147,26,.3);background:var(--gold-dim)}
+.bias-subtitle{font-size:.72rem;color:var(--text3);margin-top:6px;max-width:600px;margin-left:auto;margin-right:auto}
+.action-badge{display:inline-block;padding:5px 16px;border-radius:6px;font-size:.72rem;font-weight:800;letter-spacing:2px;margin-left:10px;text-transform:uppercase}
+.action-badge.buy{color:#0B0E11;background:var(--emerald);box-shadow:0 0 12px rgba(52,211,153,.4)}
+.action-badge.sell{color:#0B0E11;background:var(--red);box-shadow:0 0 12px rgba(248,113,113,.4)}
+.action-badge.hold{color:#0B0E11;background:var(--gold);box-shadow:0 0 12px rgba(247,147,26,.4)}
+.pivot-score-link{padding:14px;background:rgba(247,147,26,.06);border:1px solid rgba(247,147,26,.15);border-radius:10px}
+.pivot-score-link .link-title{font-size:.75rem;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.pivot-score-link .link-body{font-size:.78rem;color:var(--text2);line-height:1.6}
+.pivot-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:8px}
+.pivot-legend-item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:var(--bg3);border-radius:8px;border-left:3px solid}
+.pivot-legend-item .pl-label{font-weight:700;font-size:.72rem;letter-spacing:.8px;text-transform:uppercase;min-width:28px}
+.pivot-legend-item .pl-price{font-family:var(--font-h);font-size:.88rem;min-width:72px}
+.pivot-legend-item .pl-desc{font-size:.72rem;color:var(--text2);line-height:1.5}
+
+.footer{text-align:center;padding:24px 0;color:var(--text3);font-size:.78rem;border-top:1px solid var(--border);margin-top:30px}
+.footer strong{color:var(--gold)}
+.hidden{display:none!important}
+@keyframes pulse{0%{opacity:.5}50%{opacity:1}100%{opacity:.5}}
+.loading-msg{text-align:center;padding:60px;color:var(--text2);font-size:1.1rem;animation:pulse 1.5s infinite}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{animation:fadeUp .6s ease forwards;opacity:0}
+.fade-up:nth-child(1){animation-delay:.05s}.fade-up:nth-child(2){animation-delay:.1s}.fade-up:nth-child(3){animation-delay:.15s}.fade-up:nth-child(4){animation-delay:.2s}.fade-up:nth-child(5){animation-delay:.25s}.fade-up:nth-child(6){animation-delay:.3s}.fade-up:nth-child(7){animation-delay:.35s}.fade-up:nth-child(8){animation-delay:.4s}
+
+@media(max-width:768px){
+  .container{padding:14px 10px}
+  .hero{gap:20px}
+  .dim-grid{grid-template-columns:repeat(3,1fr)}
+  .ret-grid{grid-template-columns:repeat(3,1fr)}
+  .macro-grid{grid-template-columns:1fr}
+  .chart-box{height:260px}
+  .hero-score .ring{width:160px;height:160px}
+  .hero-score .center .v{font-size:2.2rem}
+  .pivot-layout{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .dim-grid{grid-template-columns:repeat(2,1fr)}
+  .ret-grid{grid-template-columns:repeat(2,1fr)}
+}
+@keyframes priceGlow{
+  0%,100%{text-shadow:0 0 20px rgba(247,147,26,.3),0 0 40px rgba(247,147,26,.1)}
+  50%{text-shadow:0 0 30px rgba(247,147,26,.6),0 0 60px rgba(247,147,26,.25),0 0 80px rgba(247,147,26,.1)}
+}
+.hero-price-glow{animation:priceGlow 3s ease-in-out infinite}
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="header">
+    <h1>BTC Momentum Score</h1>
+    <div class="sub">JP Trust Learning &bull; Rolling Percentile + Macro Factor Analysis v3.0 — All Dimensions /100</div>
+    <div class="period" id="periodLabel">Loading...</div>
+  </header>
+
+  <div class="status-bar">
+    <div id="status" class="status-indicator loading"><span>●</span> CONNECTING TO GITHUB...</div>
+  </div>
+
+  <div id="loadingMsg" class="loading-msg">/// LOADING DATA FROM GITHUB...</div>
+
+  <div id="dashboard" class="hidden">
+    <div class="hero" id="heroSection"></div>
+    <div id="statsGrid" style="display:none"></div>
+
+    <!-- ★ NET BIAS — BUY vs SELL ★ -->
+    <div class="section fade-up">
+      <div class="section-title"><span class="dot"></span>Buy vs Sell Momentum — Net Bias</div>
+      <div id="netBiasSection"></div>
+    </div>
+
+    <!-- ★ BUY vs SELL DIMENSION COMPARISON ★ -->
+    <div class="section fade-up">
+      <div class="section-title"><span class="dot"></span>Dimension Comparison — Buy vs Sell (/100 each)</div>
+      <div id="dimCompareGrid"></div>
+    </div>
+
+    <!-- ★ PIVOT ZONE (Tabbed Multi-TF) ★ -->
+    <div class="section fade-up">
+      <div class="section-title"><span class="dot"></span>Multi-TF Pivot Points &times; Momentum Bias</div>
+      <div class="pivot-tabs" id="pivotTabs"></div>
+      <div class="pivot-chart-wrap">
+        <div style="height:420px;position:relative"><canvas id="pivotChart"></canvas></div>
+        <div class="bias-signal" id="biasSignal"></div>
+        <div class="pivot-score-link" id="pivotScoreLink"></div>
+      </div>
+    </div>
+
+    <!-- ★ MULTI-TF TABLE + CONFLUENCE ★ -->
+    <div class="section fade-up">
+      <div class="section-title"><span class="dot"></span>Pivot Levels — D1 (Daily) / W1 (Weekly) / MN (Monthly)</div>
+      <div id="multiTFTable" style="background:var(--card);border-radius:12px;padding:16px;border:1px solid var(--border2)"></div>
+    </div>
+
+    <div class="section fade-up">
+      <div class="section-title"><span class="dot"></span>⚡ Confluence Zones — โซนที่ Pivot หลาย TF ซ้อนกัน (ภายใน 500 จุด)</div>
+      <div id="confluenceSection" style="background:var(--card);border-radius:12px;padding:16px;border:1px solid var(--border2)"></div>
+    </div>
+
+    <div class="section fade-up" style="display:none">
+      <div class="section-title"><span class="dot"></span>Momentum Dimensions (D1–D6 /100 each)</div>
+      <div class="dim-grid" id="dimGrid"></div>
+    </div>
+
+    <div class="section fade-up">
+      <div class="section-title"><span class="dot"></span>Macro Factor Signals — DXY &amp; VIX</div>
+      <div class="macro-grid" id="macroGrid"></div>
+    </div>
+
+    <div class="section fade-up">
+      <div class="section-title"><span class="dot"></span>Return Performance &amp; Rolling Percentile</div>
+      <div class="ret-grid" id="retGrid"></div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="section fade-up">
+        <div class="section-title"><span class="dot"></span>Buy — Dimension Radar</div>
+        <div class="chart-box"><canvas id="radarChart"></canvas></div>
+        <div id="penaltyBuy" style="margin-top:12px"></div>
+      </div>
+      <div class="section fade-up">
+        <div class="section-title"><span class="dot"></span>Sell — Dimension Radar</div>
+        <div class="chart-box"><canvas id="radarSellChart"></canvas></div>
+        <div id="penaltySell" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+    <div class="section fade-up" style="display:none">
+      <div class="section-title"><span class="dot"></span>Warning Flags &amp; Penalty System</div>
+      <div id="penaltySection"></div>
+    </div>
+
+    <div class="section fade-up">
+      <div class="section-title"><span class="dot"></span>Technical Details</div>
+      <div class="info-grid" id="infoGrid"></div>
+    </div>
+
+    <div class="section fade-up" style="display:none">
+      <div class="section-title"><span class="dot"></span>Momentum Tier Reference</div>
+      <div class="tier-legend" id="tierLegend"></div>
+    </div>
+
+    <div class="section fade-up" style="display:none">
+      <div class="section-title"><span class="dot"></span>Methodology</div>
+      <div class="method-grid" id="methodGrid"></div>
+    </div>
+
+    <!-- ★ METHODOLOGY (Tabbed Buy/Sell) ★ -->
+    <div class="section fade-up">
+      <div class="section-title"><span class="dot"></span>Methodology</div>
+      <div style="display:flex;gap:0;margin-bottom:16px">
+        <button id="methBuyTab" onclick="switchMethTab('buy')" style="flex:1;padding:10px;background:var(--emerald-dim);color:var(--emerald);border:1px solid rgba(52,211,153,.3);border-radius:8px 0 0 8px;font-weight:700;font-size:.78rem;cursor:pointer;letter-spacing:1px">BUY METHODOLOGY</button>
+        <button id="methSellTab" onclick="switchMethTab('sell')" style="flex:1;padding:10px;background:var(--bg3);color:var(--text3);border:1px solid var(--border);border-radius:0 8px 8px 0;font-weight:700;font-size:.78rem;cursor:pointer;letter-spacing:1px">SELL METHODOLOGY</button>
+      </div>
+      <div id="methBuyGrid" class="method-grid"></div>
+      <div id="methSellGrid" class="method-grid" style="display:none"></div>
+    </div>
+
+    <!-- ★ PIVOT BIAS REFERENCE TABLE ★ -->
+    <div class="section fade-up">
+      <div class="section-title"><span class="dot"></span>Pivot × Buy × Sell — Bias Scenarios Reference</div>
+      <div class="scenario-table-wrap" id="scenarioTable"></div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p><strong>JP Trust Learning</strong> &bull; BTC Momentum Dashboard v3.0 + Multi-TF Pivot</p>
+    <p style="margin-top:4px">Rolling Percentile + Macro Factor + Multi-TF Pivot &amp; Confluence Analysis — All Dimensions /100</p>
+  </footer>
+</div>
+
+<script>
+const CSV_URL='https://raw.githubusercontent.com/jptrustlearning/btc/main/output_momentum_btc.csv';
+const SELL_CSV_URL='https://raw.githubusercontent.com/jptrustlearning/btc/main/output_momentum_btc_sell.csv';
+const NET_CSV_URL='https://raw.githubusercontent.com/jptrustlearning/btc/main/output_momentum_btc_net.csv';
+const PRICE_CSV_URL='https://raw.githubusercontent.com/jptrustlearning/btc/main/btc_prices.csv';
+let D=null,DS=null,DN=null,PIVOT=null,PIVOT_ALL=null,CONFLUENCES=[],PRICE_DATA=null;
+
+document.addEventListener('DOMContentLoaded',loadData);
+
+async function loadData(){
+  const st=document.getElementById('status');
+  try{
+    const [sRes,sellRes,netRes,pRes]=await Promise.all([fetch(CSV_URL),fetch(SELL_CSV_URL),fetch(NET_CSV_URL),fetch(PRICE_CSV_URL)]);
+    if(!sRes.ok)throw new Error('Buy CSV: HTTP '+sRes.status);
+    if(!sellRes.ok)throw new Error('Sell CSV: HTTP '+sellRes.status);
+    if(!netRes.ok)throw new Error('Net CSV: HTTP '+netRes.status);
+    if(!pRes.ok)throw new Error('Price CSV: HTTP '+pRes.status);
+    const sText=await sRes.text(),sellText=await sellRes.text(),netText=await netRes.text(),pText=await pRes.text();
+    const rows=parseCSV(sText);
+    const sellRows=parseCSV(sellText);
+    const netRows=parseCSV(netText);
+    if(!rows.length)throw new Error('No buy score data');
+    D=rows[0];
+    DS=sellRows.length?sellRows[0]:null;
+    DN=netRows.length?netRows[0]:null;
+    PIVOT_ALL=loadMultiTFPivots(D);
+    PIVOT=PIVOT_ALL['D1']||null;
+    CONFLUENCES=parseConfluences(D.Confluence_Zones||'');
+    PRICE_DATA=parsePriceCSV(pText);
+    if(PIVOT) PIVOT.price=parseFloat(D.Price)||0;
+    st.className='status-indicator success';
+    st.innerHTML='<span>●</span> DATA LOADED — BUY + SELL + NET BIAS + PIVOT';
+    document.getElementById('periodLabel').textContent='As of: '+D.As_Of_Running+'  •  BD1: '+D.Base_Date_1+'  •  BD2: '+D.Base_Date_2;
+    document.getElementById('loadingMsg').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    render();
+  }catch(e){
+    console.error(e);
+    st.className='status-indicator error';
+    st.innerHTML='<span>●</span> FAILED — '+e.message;
+    document.getElementById('loadingMsg').textContent='Error loading data. Check console.';
+  }
+}
+
+// ── Load Multi-TF Pivots from CSV columns ──
+function loadMultiTFPivots(d){
+  const tfs={};
+  ['D1','W1','MN'].forEach(tf=>{
+    const pp=parseFloat(d['Pivot_'+tf+'_PP']);
+    if(isNaN(pp))return;
+    tfs[tf]={
+      PP:pp,
+      R1:parseFloat(d['Pivot_'+tf+'_R1']),R2:parseFloat(d['Pivot_'+tf+'_R2']),R3:parseFloat(d['Pivot_'+tf+'_R3']),
+      S1:parseFloat(d['Pivot_'+tf+'_S1']),S2:parseFloat(d['Pivot_'+tf+'_S2']),S3:parseFloat(d['Pivot_'+tf+'_S3']),
+      H:parseFloat(d['Pivot_'+tf+'_H']),L:parseFloat(d['Pivot_'+tf+'_L']),C:parseFloat(d['Pivot_'+tf+'_C']),
+      date:d['Pivot_'+tf+'_Date']||'',
+      levels:[
+        {label:'R3',value:parseFloat(d['Pivot_'+tf+'_R3']),type:'resistance'},
+        {label:'R2',value:parseFloat(d['Pivot_'+tf+'_R2']),type:'resistance'},
+        {label:'R1',value:parseFloat(d['Pivot_'+tf+'_R1']),type:'resistance'},
+        {label:'PP',value:pp,type:'pivot'},
+        {label:'S1',value:parseFloat(d['Pivot_'+tf+'_S1']),type:'support'},
+        {label:'S2',value:parseFloat(d['Pivot_'+tf+'_S2']),type:'support'},
+        {label:'S3',value:parseFloat(d['Pivot_'+tf+'_S3']),type:'support'},
+      ]
+    };
+  });
+  return tfs;
+}
+
+function parseConfluences(str){
+  if(!str||str==='None')return [];
+  return str.split(';').map(part=>{
+    const [avgStr,tags,type]=part.split('|');
+    const avg=parseFloat(avgStr.replace('~',''));
+    const items=tags.split('+').map(t=>{
+      const m=t.trim().match(/^(\w+)\s+(\w+)\(([\d.]+)\)$/);
+      return m?{tf:m[1],level:m[2],price:parseFloat(m[3])}:null;
+    }).filter(Boolean);
+    return {avg,items,type:type||'Mixed'};
+  });
+}
+
+function parsePriceCSV(csv){
+  const lines=csv.trim().split('\n');
+  const data=[];
+  for(let i=1;i<lines.length;i++){
+    const c=lines[i].split(',');
+    if(c.length>=6)data.push({date:c[0].trim(),open:+c[1],high:+c[2],low:+c[3],close:+c[4],vol:parseInt(c[5])});
+  }
+  return data;
+}
+
+// ── Bias Signal ──
+function computeBias(){
+  if(!PIVOT||!D)return{signal:'N/A',cls:'neutral',icon:'—',detail:'',action:'HOLD',actionCls:'hold'};
+  const price=PIVOT.price,score=fi('Net_Score_Avg'),delta=fi('Score_Delta');
+  const isStrong=score>=75,isMod=score>=60&&score<75,isWeak=score<60,isRising=delta>0;
+
+  if(price>=PIVOT.R1&&isStrong&&isRising)return{signal:'Bullish Breakout',cls:'bullish',icon:'🚀',action:'BUY',actionCls:'buy',detail:'Price above R1 with strong rising momentum — breakout territory. Watch R2/R3 as next targets.'};
+  if(price>=PIVOT.R1&&isStrong&&!isRising)return{signal:'Bullish but Cooling',cls:'bullish',icon:'📈',action:'HOLD',actionCls:'hold',detail:'Price above R1 with strong score but declining delta — momentum may be plateauing. Consider partial take-profit.'};
+  if(price>=PIVOT.PP&&price<PIVOT.R1&&isStrong)return{signal:'Bullish Accumulation',cls:'bullish',icon:'💪',action:'BUY',actionCls:'buy',detail:'Price between PP–R1 with strong momentum — building power for potential R1 breakout.'};
+  if(price>=PIVOT.PP&&isMod)return{signal:'Cautious Bullish',cls:'neutral',icon:'📊',action:'HOLD',actionCls:'hold',detail:'Price above pivot with moderate score — trend positive but not confirmed strong. R1 is key test.'};
+  if(price<PIVOT.PP&&price>=PIVOT.S1&&isStrong)return{signal:'Support Bounce',cls:'bullish',icon:'🔄',action:'BUY',actionCls:'buy',detail:'Price below pivot but momentum strong — likely testing support before resuming uptrend.'};
+  if(price<PIVOT.PP&&price>=PIVOT.S1&&isMod)return{signal:'Neutral Range',cls:'neutral',icon:'↔️',action:'HOLD',actionCls:'hold',detail:'Price between S1–PP with moderate momentum — range-bound. Wait for directional confirmation.'};
+  if(price<PIVOT.S1&&isWeak)return{signal:'Bearish Breakdown',cls:'bearish',icon:'📉',action:'SELL',actionCls:'sell',detail:'Price below S1 with weak momentum — risk of further decline toward S2/S3.'};
+  if(price<PIVOT.S1&&isStrong)return{signal:'Oversold Recovery',cls:'neutral',icon:'⚡',action:'BUY',actionCls:'buy',detail:'Price below S1 but momentum still strong — divergence may signal recovery toward PP.'};
+  if(price>=PIVOT.R1&&isWeak)return{signal:'Rejection Risk',cls:'bearish',icon:'⚠️',action:'SELL',actionCls:'sell',detail:'Price above R1 but momentum weak — high risk of rejection and pullback to PP.'};
+  if(price<PIVOT.PP&&isWeak&&!isRising)return{signal:'Bearish Trend',cls:'bearish',icon:'🔻',action:'SELL',actionCls:'sell',detail:'Price below pivot with weak declining momentum — bearish bias continues.'};
+  return{signal:'Monitoring',cls:'neutral',icon:'👁️',action:'HOLD',actionCls:'hold',detail:'Mixed signals between price position and momentum. Watch for clearer confirmation.'};
+}
+
+// ── CSV Parser ──
+function parseCSV(t){const l=t.trim().split('\n'),h=csvL(l[0]),r=[];for(let i=1;i<l.length;i++){const v=csvL(l[i]);if(v.length<h.length)continue;const o={};h.forEach((k,j)=>o[k]=v[j]);r.push(o);}return r;}
+function csvL(l){const r=[];let c='',q=false;for(let i=0;i<l.length;i++){const ch=l[i];if(ch==='"')q=!q;else if(ch===','&&!q){r.push(c.trim());c='';}else c+=ch;}r.push(c.trim());return r;}
+
+// ── Helpers ──
+const f=(k,d=1)=>parseFloat(D[k]||0).toFixed(d);
+const fi=k=>parseFloat(D[k]||0);
+const tierColor=t=>t.includes('Very Strong')?'var(--emerald)':t.includes('Strong')?'#34D399':t.includes('Moderate')?'var(--gold)':t.includes('Neutral')?'var(--text2)':'var(--red)';
+const scoreColor=v=>v>=85?'var(--emerald)':v>=75?'#34D399':v>=60?'var(--gold)':v>=45?'var(--text)':v>=30?'var(--text2)':'var(--red)';
+const retColor=v=>v>=0?'var(--emerald)':'var(--red)';
+const dimColors=['#60A5FA','#A78BFA','#34D399','#F7931A','#FB923C','#22D3EE'];
+const fp=v=>'$'+v.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
+
+function render(){
+  renderHero();renderStats();renderNetBias();renderDimCompare();
+  renderPivotZone();renderDimensions();renderMacro();
+  renderReturns();renderPenalty();renderInfo();renderTierLegend();renderMethodology();
+  renderScenarioTable();
+  renderRadarChart();renderBarChart();
+}
+
+// ── PIVOT ZONE (Tabbed) ──
+let pivotChartInstance=null;
+let activeTab='conf';
+
+function renderPivotZone(){
+  if(!PIVOT||!PRICE_DATA||PRICE_DATA.length<5){
+    document.getElementById('pivotChart').parentElement.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3)">Insufficient data for pivot chart</div>';
+    return;
+  }
+
+  // Build tabs: Confluence / D1 / W1 / MN
+  const tabs=[{id:'conf',label:'⚡ Confluence',count:CONFLUENCES.length}];
+  ['D1','W1','MN'].forEach(tf=>{if(PIVOT_ALL[tf])tabs.push({id:tf,label:tf});});
+  
+  const tabsEl=document.getElementById('pivotTabs');
+  tabsEl.innerHTML=tabs.map(t=>{
+    const countBadge=t.count!==undefined?`<span class="tab-count">${t.count}</span>`:'';
+    return `<div class="pivot-tab${t.id===activeTab?' active':''}" data-tab="${t.id}" onclick="switchPivotTab('${t.id}')">${t.label}${countBadge}</div>`;
+  }).join('');
+
+  drawPivotChart(activeTab);
+  renderBiasAndInterpretation();
+  renderMultiTFTable();
+  renderConfluenceZones();
+}
+
+function switchPivotTab(tab){
+  activeTab=tab;
+  document.querySelectorAll('.pivot-tab').forEach(t=>{
+    t.classList.toggle('active',t.dataset.tab===tab);
+  });
+  drawPivotChart(tab);
+}
+
+function drawPivotChart(tab){
+  // Destroy previous chart
+  if(pivotChartInstance){pivotChartInstance.destroy();pivotChartInstance=null;}
+
+  const price=PIVOT.price;
+  const chartDays=Math.min(10,PRICE_DATA.length);
+  const chartData=PRICE_DATA.slice(-chartDays);
+  const zoneSlots=5;
+  const totalSlots=chartDays+zoneSlots;
+  const labels=[...chartData.map(d=>d.date),...Array(zoneSlots).fill('')];
+  const closes=[...chartData.map(d=>d.close),...Array(zoneSlots).fill(null)];
+  const priceCloses=chartData.map(d=>d.close);
+  const dataMin=Math.min(...priceCloses),dataMax=Math.max(...priceCloses);
+
+  // Determine which TF levels to show
+  let showTFs=[];
+  let confLevels=[];  // extra confluence-only levels from other TFs
+  
+  if(tab==='conf'){
+    // Show D1 as base + only confluence-matching levels from W1/MN
+    showTFs=['D1'];
+    // Gather confluence level labels
+    const confSet=new Set();
+    CONFLUENCES.forEach(c=>c.items.forEach(i=>{if(i.tf!=='D1')confSet.add(i.tf+'_'+i.level);}));
+    ['W1','MN'].forEach(tf=>{
+      if(!PIVOT_ALL[tf])return;
+      PIVOT_ALL[tf].levels.forEach(lv=>{
+        if(confSet.has(tf+'_'+lv.label)){
+          confLevels.push({tf,label:lv.label,value:lv.value,type:lv.type});
+        }
+      });
+    });
+  }else{
+    showTFs=[tab];
+  }
+
+  // Colors per TF
+  const tfColorMap={
+    D1:{R:'#F87171',S:'#34D399',PP:'#F7931A'},
+    W1:{R:'#60A5FA',S:'#60A5FA',PP:'#60A5FA'},
+    MN:{R:'#A78BFA',S:'#A78BFA',PP:'#A78BFA'}
+  };
+
+  // Build pivot datasets
+  const pivotDatasets=[];
+  const labelAnnotations=[];
+
+  showTFs.forEach(tf=>{
+    if(!PIVOT_ALL[tf])return;
+    const cols=tfColorMap[tf];
+    PIVOT_ALL[tf].levels.forEach(lv=>{
+      const color=lv.type==='resistance'?cols.R:lv.type==='pivot'?cols.PP:cols.S;
+      const data=Array(totalSlots).fill(null);
+      for(let i=chartDays-2;i<totalSlots;i++) data[i]=lv.value;
+      pivotDatasets.push({
+        label:tf+' '+lv.label+' '+fp(lv.value),
+        data,borderColor:color,
+        borderWidth:lv.label==='PP'?2.5:1.8,
+        borderDash:lv.label==='PP'?[]:[6,4],
+        pointRadius:0,pointHoverRadius:0,fill:false,tension:0,spanGaps:false,order:2,
+      });
+      labelAnnotations.push({tf,label:lv.label,value:lv.value,color});
+    });
+  });
+
+  // Add confluence extra levels (dashed, semi-transparent)
+  confLevels.forEach(lv=>{
+    const cols=tfColorMap[lv.tf];
+    const color=lv.type==='resistance'?cols.R:lv.type==='pivot'?cols.PP:cols.S;
+    const data=Array(totalSlots).fill(null);
+    for(let i=chartDays-2;i<totalSlots;i++) data[i]=lv.value;
+    pivotDatasets.push({
+      label:lv.tf+' '+lv.label+' '+fp(lv.value),
+      data,borderColor:color+'99',
+      borderWidth:1.5,borderDash:[8,4],
+      pointRadius:0,pointHoverRadius:0,fill:false,tension:0,spanGaps:false,order:2,
+    });
+    labelAnnotations.push({tf:lv.tf,label:lv.label,value:lv.value,color:color+'bb'});
+  });
+
+  // Y-axis range from visible levels
+  const allVals=labelAnnotations.map(l=>l.value);
+  const lvMin=allVals.length?Math.min(...allVals):dataMin;
+  const lvMax=allVals.length?Math.max(...allVals):dataMax;
+  const lvRange=lvMax-lvMin||100;
+  const yMin=Math.min(lvMin,dataMin)-lvRange*0.35;
+  const yMax=Math.max(lvMax,dataMax)+lvRange*0.35;
+
+  // Label plugin
+  const pivotLabelPlugin={
+    id:'pivotLabels',
+    afterDraw(chart){
+      const ctx=chart.ctx,yScale=chart.scales.y,area=chart.chartArea,x=area.right-8;
+      ctx.save();ctx.textAlign='right';ctx.textBaseline='middle';
+      const drawn=[];
+      labelAnnotations.forEach(lv=>{
+        const y=yScale.getPixelForValue(lv.value);
+        if(y<area.top-5||y>area.bottom+5)return;
+        if(drawn.some(d=>Math.abs(d-y)<10))return;
+        drawn.push(y);
+        const text=lv.tf+' '+lv.label+' '+fp(lv.value);
+        ctx.font='bold 9px Instrument Sans, sans-serif';
+        const w=ctx.measureText(text).width+10;
+        ctx.fillStyle=lv.color+'22';ctx.beginPath();ctx.roundRect(x-w-2,y-8,w+4,16,4);ctx.fill();
+        ctx.fillStyle=lv.color;ctx.fillText(text,x,y);
+      });
+      ctx.restore();
+    }
+  };
+
+  // Confluence band plugin (only in conf tab)
+  const confPlugin={
+    id:'confluenceZones',
+    beforeDatasetsDraw(chart){
+      if(tab!=='conf'||!CONFLUENCES.length)return;
+      const ctx=chart.ctx,yScale=chart.scales.y,area=chart.chartArea;
+      ctx.save();
+      CONFLUENCES.forEach(c=>{
+        const prices=c.items.map(i=>i.price);
+        const hi=Math.max(...prices)+5,lo=Math.min(...prices)-5;
+        const yHi=yScale.getPixelForValue(hi),yLo=yScale.getPixelForValue(lo);
+        if(yHi>area.bottom||yLo<area.top)return;
+        const isR=c.type==='Resistance',isS=c.type==='Support';
+        ctx.fillStyle=isR?'rgba(248,113,113,.08)':isS?'rgba(52,211,153,.08)':'rgba(247,147,26,.08)';
+        const top=Math.max(yHi,area.top),bot=Math.min(yLo,area.bottom);
+        ctx.fillRect(area.left,top,area.right-area.left,bot-top);
+        // Band label
+        ctx.font='bold 10px Instrument Sans';
+        ctx.fillStyle=isR?'rgba(248,113,113,.6)':isS?'rgba(52,211,153,.6)':'rgba(247,147,26,.6)';
+        ctx.textAlign='left';
+        ctx.fillText('⚡ '+c.type+' ~'+fp(c.avg),area.left+8,(top+bot)/2);
+      });
+      ctx.restore();
+    }
+  };
+
+  // Current price marker plugin
+  const priceMarkerPlugin={
+    id:'priceMarker',
+    afterDraw(chart){
+      const ctx=chart.ctx,yScale=chart.scales.y,area=chart.chartArea;
+      const y=yScale.getPixelForValue(price);
+      if(y<area.top||y>area.bottom)return;
+      ctx.save();
+      ctx.setLineDash([2,4]);ctx.strokeStyle='rgba(247,147,26,.4)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(area.left,y);ctx.lineTo(area.right,y);ctx.stroke();
+      // Price label on left
+      const label='NOW '+fp(price);
+      ctx.font='bold 9px Instrument Sans';
+      const w=ctx.measureText(label).width+10;
+      ctx.fillStyle='rgba(247,147,26,.15)';ctx.beginPath();ctx.roundRect(area.left+4,y-8,w,16,4);ctx.fill();
+      ctx.fillStyle='#F7931A';ctx.textAlign='left';ctx.fillText(label,area.left+9,y);
+      ctx.restore();
+    }
+  };
+
+  const ctx=document.getElementById('pivotChart').getContext('2d');
+
+  pivotChartInstance=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {
+          label:'BTC Close Price',data:closes,
+          borderColor:'#F7931A',backgroundColor:'rgba(247,147,26,.08)',
+          borderWidth:2.5,pointRadius:0,pointHoverRadius:5,
+          pointHoverBackgroundColor:'#F7931A',pointHoverBorderColor:'#fff',
+          fill:true,tension:.3,order:1,
+        },
+        ...pivotDatasets
+      ]
+    },
+    plugins:[confPlugin,pivotLabelPlugin,priceMarkerPlugin],
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      layout:{padding:{right:10}},
+      plugins:{
+        legend:{
+          display:true,position:'top',
+          labels:{
+            usePointStyle:true,pointStyle:'line',color:'#9CA3AF',
+            font:{size:9,family:'Instrument Sans',weight:'600'},padding:8,boxWidth:20,
+            filter:function(item){const l=item.text;return l.includes('Gold')||l.includes(' PP ');}
+          }
+        },
+        tooltip:{
+          backgroundColor:'#1e293b',borderColor:'#F7931A',borderWidth:1,
+          titleColor:'#F7931A',bodyColor:'#E8E6E1',padding:12,
+          titleFont:{family:'Instrument Sans',weight:'700'},bodyFont:{family:'Instrument Sans',size:11},
+          filter:function(item){return item.raw!==null;},
+          callbacks:{
+            title:function(items){return items[0]?items[0].label:'';},
+            label:function(c){if(c.raw===null)return '';if(c.datasetIndex===0)return 'Close: '+fp(c.raw);return c.dataset.label;}
+          }
+        }
+      },
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#6B7280',font:{size:9,family:'Instrument Sans'},maxRotation:45,callback:function(v){const l=this.getLabelForValue(v);return l===''?'':l;}}},
+        y:{min:yMin,max:yMax,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#6B7280',font:{size:10,family:'Instrument Sans'},callback:function(v){return '$'+v.toLocaleString('en-US',{maximumFractionDigits:0});}}}
+      }
+    }
+  });
+}
+
+function renderBiasAndInterpretation(){
+  const price=PIVOT.price,score=fi('Net_Score_Avg'),tier=D.Tier;
+  const sellS=DS?parseFloat(DS.Net_Score_Avg):0;
+
+  // Use net bias scenario if available, otherwise fallback
+  let biasIcon,biasSignal,biasCls,biasAction,biasActionCls,biasDetail;
+  if(DN){
+    biasIcon=DN.Scenario_Icon;biasSignal=DN.Scenario_Signal;
+    const sz=DN.Scenario_Zone;
+    biasCls=sz==='BULLISH'?'bullish':sz==='BEARISH'?'bearish':'neutral';
+    biasAction=DN.Scenario_Action;biasActionCls=biasAction==='BUY'?'buy':biasAction==='SELL'?'sell':'hold';
+    biasDetail=DN.Scenario_Detail;
+  }else{
+    const bias=computeBias();
+    biasIcon=bias.icon;biasSignal=bias.signal;biasCls=bias.cls;biasAction=bias.action;biasActionCls=bias.actionCls;biasDetail=bias.detail;
+  }
+
+  document.getElementById('biasSignal').innerHTML=`
+    <div class="bias-badge ${biasCls}"><span style="font-size:1.2rem">${biasIcon}</span> ${biasSignal}<span class="action-badge ${biasActionCls}">${biasAction}</span></div>
+    <div class="bias-subtitle">${biasDetail}</div>
+    ${DN?`<div style="font-size:.68rem;color:var(--text3);margin-top:4px">Buy: ${score.toFixed(1)} | Sell: ${sellS.toFixed(1)} | Net: ${parseFloat(DN.Net_Bias)>=0?'+':''}${parseFloat(DN.Net_Bias).toFixed(1)}</div>`:''}`;
+
+  let linkText='';
+  if(price>=PIVOT.R1){
+    linkText=score>=75
+      ?`ราคาอยู่เหนือ R1 (D1) และ Buy Score <strong>${score.toFixed(1)}</strong> (${tier}) แข็ง + Sell ${sellS.toFixed(1)} อ่อน → โอกาสไปต่อ ดู R2 (${fp(PIVOT.R2)})`
+      :`ราคาอยู่เหนือ R1 (D1) แต่ Buy Score <strong>${score.toFixed(1)}</strong> ไม่แข็งพอ — ระวัง false breakout`;
+  }else if(price>=PIVOT.PP){
+    linkText=`ราคาอยู่ระหว่าง PP–R1 (D1) | Buy <strong>${score.toFixed(1)}</strong> vs Sell <strong>${sellS.toFixed(1)}</strong> → ${score>sellS?'Buy แข็งกว่า กำลังสะสมแรง':'ระวัง Sell เริ่มมีแรง'}`;
+  }else if(price>=PIVOT.S1){
+    linkText=`ราคาอยู่ระหว่าง S1–PP (D1) | Buy <strong>${score.toFixed(1)}</strong> vs Sell <strong>${sellS.toFixed(1)}</strong> → ${score>sellS+20?'Divergence! Buy ยังแข็ง อาจเด้งกลับ':'ทั้งสองฝั่งใกล้กัน รอยืนยัน'}`;
+  }else{
+    linkText=`ราคาอยู่ใต้ S1 (D1) | Buy <strong>${score.toFixed(1)}</strong> vs Sell <strong>${sellS.toFixed(1)}</strong> → ${sellS>score?'Sell แข็งกว่า เสี่ยงลงต่อ S2/S3':'Buy ยังมีแรง อาจ recover'}`;
+  }
+  document.getElementById('pivotScoreLink').innerHTML=`
+    <div class="link-title">🔗 Pivot × Buy vs Sell Interpretation</div>
+    <div class="link-body">${linkText}</div>`;
+}
+
+function renderMultiTFTable(){
+  const el=document.getElementById('multiTFTable');
+  if(!el)return;
+  const levels=['R3','R2','R1','PP','S1','S2','S3'];
+  const tfLabels={D1:{name:'D1 (Daily)',color:'#F7931A'},W1:{name:'W1 (Weekly)',color:'#60A5FA'},MN:{name:'MN (Monthly)',color:'#A78BFA'}};
+  const price=parseFloat(D.Price)||0;
+  
+  let html=`<table style="width:100%;border-collapse:collapse;font-size:.78rem;">
+    <thead><tr style="border-bottom:2px solid var(--border2);">
+      <th style="text-align:left;padding:8px 10px;color:var(--text3);font-size:.7rem;letter-spacing:1px;font-weight:700;">LEVEL</th>`;
+  ['D1','W1','MN'].forEach(tf=>{
+    const t=tfLabels[tf];
+    html+=`<th style="text-align:center;padding:8px 10px;color:${t.color};font-size:.7rem;letter-spacing:1px;font-weight:700;">${t.name}</th>`;
+  });
+  html+=`</tr></thead><tbody>`;
+  
+  levels.forEach(lv=>{
+    const isR=lv.startsWith('R'),isPP=lv==='PP';
+    const rowBg=isPP?'rgba(247,147,26,.04)':'transparent';
+    html+=`<tr style="border-bottom:1px solid var(--border);background:${rowBg}">
+      <td style="padding:7px 10px;font-weight:700;color:${isR?'var(--red)':isPP?'var(--gold)':'var(--emerald)'};font-size:.72rem;letter-spacing:.8px;">${lv}</td>`;
+    ['D1','W1','MN'].forEach(tf=>{
+      const p=PIVOT_ALL[tf];
+      if(p){
+        const val=p[lv];
+        const isNear=Math.abs(val-price)<500;
+        const nearStyle=isNear?'background:rgba(255,102,0,.12);font-weight:700;':'';
+        html+=`<td style="text-align:center;padding:7px 10px;font-family:var(--font-h);color:${tfLabels[tf].color};${nearStyle}">${fp(val)}</td>`;
+      }else{
+        html+=`<td style="text-align:center;padding:7px 10px;color:var(--text3);">—</td>`;
+      }
+    });
+    html+=`</tr>`;
+  });
+  html+=`</tbody></table>`;
+  
+  const pos=D.Pivot_Position||'';
+  if(pos){
+    html+=`<div style="padding:8px 12px;margin-top:8px;background:rgba(255,102,0,.06);border:1px solid rgba(255,102,0,.2);border-radius:8px;font-size:.78rem;">
+      <span style="color:var(--orange);font-weight:700;">📍 PRICE NOW</span> <span style="font-family:var(--font-h);color:var(--gold)">${fp(price)}</span>
+      <span style="color:var(--text2);margin-left:8px;">— Position: <strong style="color:var(--text)">${pos}</strong> (D1)</span>
+    </div>`;
+  }
+
+  let srcHtml='<div style="display:flex;gap:16px;margin-top:8px;font-size:.68rem;color:var(--text3);">';
+  ['D1','W1','MN'].forEach(tf=>{
+    if(PIVOT_ALL[tf]) srcHtml+=`<span style="color:${tfLabels[tf].color};">${tf}: H/L/C from ${PIVOT_ALL[tf].date}</span>`;
+  });
+  srcHtml+='</div>';
+  html+=srcHtml;
+  el.innerHTML=html;
+}
+
+function renderConfluenceZones(){
+  const el=document.getElementById('confluenceSection');
+  if(!el)return;
+  if(!CONFLUENCES.length){
+    el.innerHTML=`<div style="padding:16px;text-align:center;color:var(--text3);font-size:.82rem;">ไม่พบ Confluence Zones (ไม่มี Pivot ของ TF ต่างกันที่ซ้อนกันภายใน 500 จุด)</div>`;
+    return;
+  }
+  const price=parseFloat(D.Price)||0;
+  
+  let html='';
+  CONFLUENCES.forEach(c=>{
+    const isR=c.type==='Resistance',isS=c.type==='Support';
+    const zIcon=isR?'🔴':isS?'🟢':'🟡';
+    const zColor=isR?'var(--red)':isS?'var(--emerald)':'var(--gold)';
+    const zBg=isR?'rgba(248,113,113,.06)':isS?'rgba(52,211,153,.06)':'rgba(247,147,26,.06)';
+    const dist=c.avg-price;
+    const distStr=(dist>=0?'▲ +':'▼ ')+Math.abs(dist).toFixed(1)+' pts';
+    const distDir=dist>=0?'ข้างบน':'ข้างล่าง';
+    
+    const tags=c.items.map(i=>{
+      const tc=i.tf==='D1'?'#F7931A':i.tf==='W1'?'#60A5FA':'#A78BFA';
+      return `<span style="color:${tc};font-weight:600;">${i.tf} ${i.level} (${fp(i.price)})</span>`;
+    }).join(' + ');
+    
+    html+=`<div style="padding:10px 14px;background:${zBg};border-radius:8px;border-left:3px solid ${zColor};margin-bottom:6px;">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:1.1rem;">${zIcon}</span>
+        <span style="font-family:var(--font-h);font-size:.95rem;color:${zColor};">~${fp(c.avg)}</span>
+        <span style="font-size:.72rem;color:var(--text3);font-weight:600;letter-spacing:.5px;">${c.type.toUpperCase()}</span>
+        <span style="font-size:.72rem;color:var(--orange);margin-left:auto;">${distStr} (${distDir})</span>
+      </div>
+      <div style="font-size:.75rem;color:var(--text2);margin-top:4px;">${tags}</div>
+      <div style="font-size:.68rem;color:var(--text3);margin-top:3px;">
+        ${isR?'แนวต้านที่ PP ของหลาย TF ซ้อนกัน — แนวต้านแข็งแรงเป็นพิเศษ':'แนวรับที่ PP ของหลาย TF ซ้อนกัน — แนวรับแข็งแรงเป็นพิเศษ'}
+      </div>
+    </div>`;
+  });
+  
+  el.innerHTML=html;
+}
+
+// ── Hero ──
+function renderHero(){
+  const n=fi('Net_Score_Avg'),t=D.Tier,p=fi('Price'),d=fi('Score_Delta'),b1=fi('Net_Score_BD1'),b2=fi('Net_Score_BD2');
+  const sellScore=DS?parseFloat(DS.Net_Score_Avg||0):0;
+  const sellBD1=DS?parseFloat(DS.Net_Score_BD1||0):0;
+  const buyBD1=fi('Net_Score_BD1');
+  const netBias=DN?parseFloat(DN.Net_Bias||0):n-sellScore;
+  const biasTier=DN?DN.Bias_Tier:'';
+  const scenAction=DN?DN.Scenario_Action:'';
+  const scenSignal=DN?DN.Scenario_Signal:'';
+  const scenIcon=DN?DN.Scenario_Icon:'';
+  const actionCls=scenAction==='BUY'?'buy':scenAction==='SELL'?'sell':'hold';
+  const buyDelta=DN?parseFloat(DN.Buy_Delta||0):(n-buyBD1);
+  const sellDelta=DN?parseFloat(DN.Sell_Delta||0):(sellScore-sellBD1);
+  const buyPrev=n-buyDelta;
+  const sellPrev=sellScore-sellDelta;
+  // Compute Combined Signal for hero
+  const buyS=n,sellS=sellScore,nb=netBias;
+  let comboName='',comboColor2='';
+  if(buyS>=75&&sellS<45&&nb>=20){comboName='🟢 Full Bullish Confirmed';comboColor2='var(--emerald)';}
+  else if(buyS>=60&&sellS<45&&nb>=20){comboName='🟢 Bullish Dominant';comboColor2='#8BD4B0';}
+  else if(sellS>=75&&buyS<45&&nb<=-20){comboName='🔴 Full Bearish Confirmed';comboColor2='var(--red)';}
+  else if(sellS>=60&&buyS<45&&nb<=-20){comboName='🔴 Bearish Dominant';comboColor2='#F87171';}
+  else if(buyS>=55&&sellS>=55&&Math.abs(nb)<20){comboName='🟡 Tug of War';comboColor2='var(--gold)';}
+  else if(buyS>=55&&sellS<55&&nb>0){comboName='🟢 Lean Bullish';comboColor2='#8BD4B0';}
+  else if(sellS>=55&&buyS<55&&nb<0){comboName='🔴 Lean Bearish';comboColor2='#F87171';}
+  else if(buyS<55&&sellS<55){comboName='⚪ Dead Zone';comboColor2='var(--text3)';}
+  else{comboName='⚪ Mixed Signal';comboColor2='var(--text3)';}
+
+  document.getElementById('heroSection').innerHTML=`
+    <div class="hero-score"><div class="ring"><canvas id="ringCanvas" width="200" height="200"></canvas>
+      <div class="center"><div class="v" style="color:${scoreColor(n)}">${n.toFixed(1)}</div><div class="l">Buy Score</div></div></div>
+      <div style="margin-top:8px;font-size:.75rem;color:var(--text3);text-align:center">prev: <span style="color:${scoreColor(buyPrev)}">${buyPrev.toFixed(1)}</span> <span style="color:${buyDelta>=0?'var(--emerald)':'var(--red)'}">(${buyDelta>=0?'+':''}${buyDelta.toFixed(1)})</span></div>
+    </div>
+    <div class="hero-tier">
+      <div style="font-size:.85rem;color:${comboColor2};font-weight:700;margin-bottom:6px">${comboName}</div>
+      <div class="price hero-price-glow" style="font-size:2.8rem">$${p.toLocaleString('en-US',{minimumFractionDigits:1})}</div><div class="price-label">BTC Price</div>
+      ${scenSignal?`<div style="margin-top:14px;padding:10px 20px;background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:12px">
+        <div style="font-size:1rem;font-weight:700">${scenIcon} ${scenSignal}</div>
+        <span class="sc-action ${actionCls}" style="margin-top:4px;display:inline-block;padding:4px 14px;border-radius:6px;font-size:.72rem;font-weight:800;letter-spacing:1.5px">${scenAction}</span>
+      </div>`:''}
+    </div>
+    <div class="hero-score"><div class="ring"><canvas id="ringSellCanvas" width="200" height="200"></canvas>
+      <div class="center"><div class="v" style="color:${sellScore>=60?'var(--red)':sellScore>=45?'var(--orange)':'var(--text3)'}">${sellScore.toFixed(1)}</div><div class="l">Sell Score</div></div></div>
+      <div style="margin-top:8px;font-size:.75rem;color:var(--text3);text-align:center">prev: <span style="color:${sellPrev>=60?'var(--red)':sellPrev>=45?'var(--orange)':'var(--text3)'}">${sellPrev.toFixed(1)}</span> <span style="color:${sellDelta>=0?'var(--red)':'var(--emerald)'}">(${sellDelta>=0?'+':''}${sellDelta.toFixed(1)})</span></div>
+    </div>`;
+  setTimeout(()=>{
+    const c=document.getElementById('ringCanvas');if(c){const x=c.getContext('2d');
+    const cx=100,cy=100,r=85,lw=10,pct=Math.max(0,Math.min(n/100,1)),sA=-Math.PI/2,eA=sA+pct*2*Math.PI;
+    x.beginPath();x.arc(cx,cy,r,0,2*Math.PI);x.strokeStyle='rgba(255,255,255,.06)';x.lineWidth=lw;x.stroke();
+    const gr=x.createLinearGradient(0,0,200,200);gr.addColorStop(0,'#F7931A');gr.addColorStop(.5,'#34D399');gr.addColorStop(1,'#60A5FA');
+    x.beginPath();x.arc(cx,cy,r,sA,eA);x.strokeStyle=gr;x.lineWidth=lw;x.lineCap='round';x.stroke();}
+    const c2=document.getElementById('ringSellCanvas');if(c2){const x2=c2.getContext('2d');
+    const cx=100,cy=100,r=85,lw=10,pct2=Math.max(0,Math.min(sellScore/100,1)),sA=-Math.PI/2,eA2=sA+pct2*2*Math.PI;
+    x2.beginPath();x2.arc(cx,cy,r,0,2*Math.PI);x2.strokeStyle='rgba(255,255,255,.06)';x2.lineWidth=lw;x2.stroke();
+    const gr2=x2.createLinearGradient(0,0,200,200);gr2.addColorStop(0,'#F87171');gr2.addColorStop(.5,'#EF4444');gr2.addColorStop(1,'#DC2626');
+    x2.beginPath();x2.arc(cx,cy,r,sA,eA2);x2.strokeStyle=gr2;x2.lineWidth=lw;x2.lineCap='round';x2.stroke();}
+  },100);
+}
+
+// ── Stats (moved to Technical Details) ──
+function renderStats(){
+  document.getElementById('statsGrid').style.display='none';
+}
+
+// ── Dimensions ──
+function renderDimensions(){
+  const dims=[
+    {key:'D1_ReturnRank',name:'Return Rank',color:dimColors[0],max:100},
+    {key:'D2_VolumeRank',name:'Volume Rank',color:dimColors[1],max:100},
+    {key:'D3_RSI',name:'RSI',color:dimColors[2],max:100},
+    {key:'D4_MA',name:'MA Trend',color:dimColors[3],max:100},
+    {key:'D5_Volatility',name:'Volatility',color:dimColors[4],max:100},
+    {key:'D6_External',name:'Macro (DXY+VIX)',color:dimColors[5],max:100},
+  ];
+  document.getElementById('dimGrid').innerHTML=dims.map(d=>{
+    const v=fi(d.key),p=(v/d.max*100).toFixed(0);
+    return`<div class="dim-card"><div class="score" style="color:${d.color}">${v.toFixed(1)}</div><div class="max">/ ${d.max}</div>
+      <div class="name">${d.name}</div><div class="bar"><div class="fill" style="width:${p}%;background:${d.color}"></div></div></div>`;
+  }).join('');
+}
+
+// ── Macro ──
+function renderMacro(){
+  const dp=fi('DXY_1M_Pct'),vl=fi('VIX_Level'),ds=D.DXY_Signal||'',vs=D.VIX_Signal||'';
+  const db=ds.includes('🟢'),dn=ds.includes('🟡');
+  const dc=db?'var(--emerald)':dn?'var(--gold)':'var(--red)',dbg=db?'var(--emerald-dim)':dn?'var(--gold-dim)':'var(--red-dim)';
+  const vb=vs.includes('🔵'),vg=vs.includes('🟢');
+  const vc=vg?'var(--emerald)':vb?'var(--blue)':vs.includes('🟡')?'var(--gold)':'var(--red)';
+  const vbg=vg?'var(--emerald-dim)':vb?'var(--blue-dim)':vs.includes('🟡')?'var(--gold-dim)':'var(--red-dim)';
+  const dsc=ds.replace(/^[🟢🟡🔴🔵]\s*/,''),vsc=vs.replace(/^[🟢🟡🔴🔵]\s*/,'');
+  document.getElementById('macroGrid').innerHTML=`
+    <div class="macro-card dxy"><div class="macro-header"><span class="macro-label">DXY (US Dollar Index) — 1M Change</span></div>
+      <div class="macro-value" style="color:${dp>=0?'var(--emerald)':'var(--red)'}">${dp>=0?'+':''}${dp.toFixed(2)}%</div>
+      <div class="macro-signal" style="color:${dc};background:${dbg}">${ds.charAt(0)} ${dsc}</div>
+      <div class="macro-note">DXY ↑ = dollar strong → typically bearish risk assets (BTC) | DXY ↓ = dollar weak → bullish BTC</div></div>
+    <div class="macro-card vix"><div class="macro-header"><span class="macro-label">VIX (CBOE Volatility Index) — Current Level</span></div>
+      <div class="macro-value" style="color:${vl<=15?'var(--emerald)':vl<=20?'var(--gold)':vl<=30?'var(--orange)':'var(--red)'}">${vl.toFixed(2)}</div>
+      <div class="macro-signal" style="color:${vc};background:${vbg}">${vs.charAt(0)} ${vsc}</div>
+      <div class="macro-note">VIX &lt;15 calm = BTC thrives | 15-20 normal | 20-30 elevated fear → BTC pressure | &gt;30 panic selling risk assets</div></div>`;
+}
+
+// ── Returns ──
+function renderReturns(){
+  const ps=[{key:'Ret_1W_Pct',name:'1 Week'},{key:'Ret_1M_Pct',name:'1 Month'},{key:'Ret_3M_Pct',name:'3 Month'},{key:'Ret_6M_Pct',name:'6 Month'},{key:'Ret_1Y_Pct',name:'1 Year'}];
+  document.getElementById('retGrid').innerHTML=ps.map(p=>{const v=fi(p.key);
+    return`<div class="ret-card"><div class="period">${p.name}</div><div class="val" style="color:${retColor(v)}">${v>=0?'+':''}${v.toFixed(2)}%</div><div class="pctl">Rolling Pctl</div></div>`;}).join('');
+}
+
+// ── Penalty ──
+function renderPenalty(){
+  // Buy penalty
+  const t=fi('Penalty_Scaled'),r=fi('Penalty_Reversal'),d=fi('Penalty_DeathCross'),fl=D.Warning_Flags||'',cl=t===0;
+  let hb=`<div class="penalty-box ${cl?'clean':'warn'}" style="padding:10px 14px;margin-bottom:8px"><div class="title" style="font-size:.78rem">${cl?'✅ No Warning Flags':'🚨 Warning Flags Detected'}</div>
+    <div class="desc" style="font-size:.72rem">${cl?'No reversal or death cross signals.'
+    :`Penalty: ${t.toFixed(1)} | Reversal: ${r} | Death Cross: ${d}${fl&&fl!=='None'?' | '+fl:''}`}</div></div>`;
+  hb+=`<div class="info-grid" style="font-size:.72rem">
+    <div class="info-item"><span class="k">Reversal</span><span class="v" style="color:${r<0?'var(--red)':'var(--emerald)'}">${r===0?'✅ None':r+' pts'}</span></div>
+    <div class="info-item"><span class="k">Death Cross</span><span class="v" style="color:${d<0?'var(--red)':'var(--emerald)'}">${d===0?'✅ None':d+' pts'}</span></div>
+    <div class="info-item"><span class="k">Penalty (scaled)</span><span class="v" style="color:${t<0?'var(--red)':'var(--emerald)'}">${t.toFixed(1)}</span></div>
+    <div class="info-item"><span class="k">Gross → Net</span><span class="v">${f('Gross_Score_Avg')} → ${f('Net_Score_Avg')}</span></div></div>`;
+  document.getElementById('penaltyBuy').innerHTML=hb;
+
+  // Sell penalty
+  if(DS){
+    const sf=k=>DS[k]?parseFloat(DS[k]):0;
+    const st=sf('Penalty_Scaled'),sr=sf('Penalty_Reversal'),sd2=sf('Penalty_GoldenCross')||sf('Penalty_DeathCross'),sfl=DS.Warning_Flags||'',scl=st===0;
+    let hs=`<div class="penalty-box ${scl?'clean':'warn'}" style="padding:10px 14px;margin-bottom:8px"><div class="title" style="font-size:.78rem">${scl?'✅ No Warning Flags':'🚨 Warning Flags Detected'}</div>
+      <div class="desc" style="font-size:.72rem">${scl?'No reversal or golden cross signals.'
+      :`Penalty: ${st.toFixed(1)} | Reversal: ${sr} | Golden Cross: ${sd2}${sfl&&sfl!=='None'?' | '+sfl:''}`}</div></div>`;
+    hs+=`<div class="info-grid" style="font-size:.72rem">
+      <div class="info-item"><span class="k">Reversal</span><span class="v" style="color:${sr<0?'var(--red)':'var(--emerald)'}">${sr===0?'✅ None':sr+' pts'}</span></div>
+      <div class="info-item"><span class="k">Golden Cross Pen.</span><span class="v" style="color:${sd2<0?'var(--red)':'var(--emerald)'}">${sd2===0?'✅ None':sd2+' pts'}</span></div>
+      <div class="info-item"><span class="k">Penalty (scaled)</span><span class="v" style="color:${st<0?'var(--red)':'var(--emerald)'}">${st.toFixed(1)}</span></div>
+      <div class="info-item"><span class="k">Gross → Net</span><span class="v">${sf('Gross_Score_Avg').toFixed(1)} → ${sf('Net_Score_Avg').toFixed(1)}</span></div></div>`;
+    document.getElementById('penaltySell').innerHTML=hs;
+  }
+
+  // keep old section populated too
+  document.getElementById('penaltySection').innerHTML=hb;
+}
+
+// ── Info ──
+function renderInfo(){
+  const items=[
+    {k:'Price',v:'$'+fi('Price').toLocaleString('en-US',{minimumFractionDigits:2})},
+    {k:'Gross Score',v:f('Gross_Score_Avg')},
+    {k:'MA50',v:'$'+fi('MA50').toLocaleString('en-US',{minimumFractionDigits:2})},
+    {k:'MA200',v:'$'+fi('MA200').toLocaleString('en-US',{minimumFractionDigits:2})},
+    {k:'Golden Cross',v:String(D.Golden_Cross).toUpperCase()==='TRUE'?'✅ MA50 > MA200':'❌ MA50 < MA200'},
+    {k:'RSI (14-day)',v:fi('RSI_Value').toFixed(1)},
+    {k:'Volatility (Ann.)',v:fi('Volatility_Pct').toFixed(1)+'%'},
+    {k:'WP Return Pctl',v:fi('WP_Return_Pct').toFixed(1)+'%'},
+    {k:'WP Volume Pctl',v:fi('WP_Volume_Pct').toFixed(1)+'%'},
+    {k:'DXY 1M Change',v:(fi('DXY_1M_Pct')>=0?'+':'')+fi('DXY_1M_Pct').toFixed(2)+'%'},
+    {k:'VIX Level',v:fi('VIX_Level').toFixed(2)},
+    {k:'D6 External Score',v:fi('D6_External').toFixed(1)+' / 100 (raw: '+(D.D6_Raw||'0')+')'},
+    {k:'Penalty (Scaled)',v:fi('Penalty_Scaled').toFixed(1)},
+    {k:'Base Date 1',v:D.Base_Date_1},{k:'Base Date 2',v:D.Base_Date_2},
+    {k:'Net Score BD1',v:f('Net_Score_BD1')},{k:'Net Score BD2',v:f('Net_Score_BD2')},
+  ];
+  if(PIVOT){
+    items.push({k:'D1 Pivot (PP)',v:fp(PIVOT.PP)},{k:'D1 R1 / R2',v:fp(PIVOT.R1)+' / '+fp(PIVOT.R2)},{k:'D1 S1 / S2',v:fp(PIVOT.S1)+' / '+fp(PIVOT.S2)});
+  }
+  if(PIVOT_ALL['W1']){
+    items.push({k:'W1 Pivot (PP)',v:fp(PIVOT_ALL['W1'].PP)},{k:'W1 R1 / S1',v:fp(PIVOT_ALL['W1'].R1)+' / '+fp(PIVOT_ALL['W1'].S1)});
+  }
+  if(PIVOT_ALL['MN']){
+    items.push({k:'MN Pivot (PP)',v:fp(PIVOT_ALL['MN'].PP)},{k:'MN R1 / S1',v:fp(PIVOT_ALL['MN'].R1)+' / '+fp(PIVOT_ALL['MN'].S1)});
+  }
+  items.push({k:'Confluence Zones',v:CONFLUENCES.length+' found'},{k:'Pivot Position (D1)',v:D.Pivot_Position||'—'});
+  document.getElementById('infoGrid').innerHTML=items.map(i=>`<div class="info-item"><span class="k">${i.k}</span><span class="v">${i.v}</span></div>`).join('');
+}
+
+// ── Tier Legend ──
+function renderTierLegend(){
+  const buyS=DN?parseFloat(DN.Buy_Score||0):fi('Net_Score_Avg');
+  const sellS=DS?parseFloat(DS.Net_Score_Avg||0):0;
+  const nb=DN?parseFloat(DN.Net_Bias||0):buyS-sellS;
+
+  const buyTiers=[
+    {name:'Very Strong ↑↑',range:'≥75',test:buyS>=75,color:'var(--emerald)',bg:'var(--emerald-dim)',border:'rgba(52,211,153,.3)'},
+    {name:'Strong ↑',range:'60–74',test:buyS>=60&&buyS<75,color:'#8BD4B0',bg:'rgba(52,211,153,.08)',border:'rgba(52,211,153,.2)'},
+    {name:'Moderate',range:'45–59',test:buyS>=45&&buyS<60,color:'var(--gold)',bg:'var(--gold-dim)',border:'rgba(247,147,26,.3)'},
+    {name:'Weak ↓',range:'<45',test:buyS<45,color:'var(--orange)',bg:'var(--orange-dim)',border:'rgba(251,146,60,.2)'},
+  ];
+  const sellTiers=[
+    {name:'Strong Sell ↓↓',range:'≥75',test:sellS>=75,color:'var(--red)',bg:'var(--red-dim)',border:'rgba(248,113,113,.3)'},
+    {name:'Sell Signal ↓',range:'60–74',test:sellS>=60&&sellS<75,color:'#F87171',bg:'rgba(248,113,113,.08)',border:'rgba(248,113,113,.2)'},
+    {name:'Moderate',range:'45–59',test:sellS>=45&&sellS<60,color:'var(--gold)',bg:'var(--gold-dim)',border:'rgba(247,147,26,.3)'},
+    {name:'No Sell Signal',range:'<45',test:sellS<45,color:'var(--emerald)',bg:'var(--emerald-dim)',border:'rgba(52,211,153,.2)'},
+  ];
+  const biasTiers=[
+    {name:'Strong Bullish ↑↑',range:'≥+25',test:nb>=25,color:'var(--emerald)',bg:'var(--emerald-dim)',border:'rgba(52,211,153,.3)'},
+    {name:'Bullish ↑',range:'+10 to +24',test:nb>=10&&nb<25,color:'#8BD4B0',bg:'rgba(52,211,153,.08)',border:'rgba(52,211,153,.2)'},
+    {name:'Neutral →',range:'-9 to +9',test:nb>-10&&nb<10,color:'var(--text2)',bg:'rgba(156,163,175,.08)',border:'rgba(156,163,175,.2)'},
+    {name:'Bearish ↓',range:'-24 to -10',test:nb<=-10&&nb>-25,color:'#F87171',bg:'rgba(248,113,113,.08)',border:'rgba(248,113,113,.2)'},
+    {name:'Strong Bearish ↓↓',range:'≤-25',test:nb<=-25,color:'var(--red)',bg:'var(--red-dim)',border:'rgba(248,113,113,.3)'},
+  ];
+
+  // Combined Signal Zone — matches Scenario conditions (Buy+Sell+Net combined)
+  let comboName='',comboColor='',comboBg='',comboBorder='',comboDesc='';
+  if(buyS>=75&&sellS<45&&nb>=20){
+    comboName='🟢 Full Bullish Confirmed';comboDesc='Buy แข็ง + Sell หมดแรง + Net ห่างชัด → ขาขึ้นยืนยันครบ';
+    comboColor='var(--emerald)';comboBg='var(--emerald-dim)';comboBorder='rgba(52,211,153,.3)';
+  } else if(buyS>=60&&sellS<45&&nb>=20){
+    comboName='🟢 Bullish Dominant';comboDesc='Buy แข็งพอ + Sell อ่อน + Net เอียง Buy → ขาขึ้นมีน้ำหนัก';
+    comboColor='#8BD4B0';comboBg='rgba(52,211,153,.08)';comboBorder='rgba(52,211,153,.2)';
+  } else if(sellS>=75&&buyS<45&&nb<=-20){
+    comboName='🔴 Full Bearish Confirmed';comboDesc='Sell แข็ง + Buy หมดแรง + Net ห่างชัด → ขาลงยืนยันครบ';
+    comboColor='var(--red)';comboBg='var(--red-dim)';comboBorder='rgba(248,113,113,.3)';
+  } else if(sellS>=60&&buyS<45&&nb<=-20){
+    comboName='🔴 Bearish Dominant';comboDesc='Sell แข็งพอ + Buy อ่อน + Net เอียง Sell → ขาลงมีน้ำหนัก';
+    comboColor='#F87171';comboBg='rgba(248,113,113,.08)';comboBorder='rgba(248,113,113,.2)';
+  } else if(buyS>=55&&sellS>=55&&Math.abs(nb)<20){
+    comboName='🟡 Tug of War';comboDesc='ทั้ง Buy+Sell มีแรงพอกัน + Net ไม่ห่าง → ชักเย่อ รอฝั่งใดชนะ';
+    comboColor='var(--gold)';comboBg='var(--gold-dim)';comboBorder='rgba(247,147,26,.3)';
+  } else if(buyS>=55&&sellS<55&&nb>0){
+    comboName='🟢 Lean Bullish';comboDesc='Buy แข็งกว่า + Sell ไม่มีแรง แต่ Net ยังไม่ห่างพอ → เอียง Buy แต่ยังไม่ยืนยัน';
+    comboColor='#8BD4B0';comboBg='rgba(52,211,153,.05)';comboBorder='rgba(52,211,153,.15)';
+  } else if(sellS>=55&&buyS<55&&nb<0){
+    comboName='🔴 Lean Bearish';comboDesc='Sell แข็งกว่า + Buy ไม่มีแรง แต่ Net ยังไม่ห่างพอ → เอียง Sell แต่ยังไม่ยืนยัน';
+    comboColor='#F87171';comboBg='rgba(248,113,113,.05)';comboBorder='rgba(248,113,113,.15)';
+  } else if(buyS<55&&sellS<55){
+    comboName='⚪ Dead Zone';comboDesc='ทั้ง Buy+Sell ไม่มีแรง → ตลาดไม่มีทิศทาง รอ breakout';
+    comboColor='var(--text3)';comboBg='rgba(156,163,175,.05)';comboBorder='rgba(156,163,175,.15)';
+  } else {
+    comboName='⚪ Mixed Signal';comboDesc='สัญญาณผสม ไม่ตรงเงื่อนไขชัด → ระวังและรอยืนยัน';
+    comboColor='var(--text3)';comboBg='rgba(156,163,175,.05)';comboBorder='rgba(156,163,175,.15)';
+  }
+
+  const comboZones=[
+    {name:'Full Bullish Confirmed',cond:'Buy≥75 & Sell<45 & Net≥+20',color:'var(--emerald)',bg:'var(--emerald-dim)',border:'rgba(52,211,153,.3)'},
+    {name:'Bullish Dominant',cond:'Buy≥60 & Sell<45 & Net≥+20',color:'#8BD4B0',bg:'rgba(52,211,153,.08)',border:'rgba(52,211,153,.2)'},
+    {name:'Lean Bullish',cond:'Buy≥55 & Sell<55 & Net>0',color:'#8BD4B0',bg:'rgba(52,211,153,.05)',border:'rgba(52,211,153,.15)'},
+    {name:'Tug of War',cond:'Buy≥55 & Sell≥55 & |Net|<20',color:'var(--gold)',bg:'var(--gold-dim)',border:'rgba(247,147,26,.3)'},
+    {name:'Dead Zone',cond:'Buy<55 & Sell<55',color:'var(--text3)',bg:'rgba(156,163,175,.05)',border:'rgba(156,163,175,.15)'},
+    {name:'Lean Bearish',cond:'Sell≥55 & Buy<55 & Net<0',color:'#F87171',bg:'rgba(248,113,113,.05)',border:'rgba(248,113,113,.15)'},
+    {name:'Bearish Dominant',cond:'Sell≥60 & Buy<45 & Net≤-20',color:'#F87171',bg:'rgba(248,113,113,.08)',border:'rgba(248,113,113,.2)'},
+    {name:'Full Bearish Confirmed',cond:'Sell≥75 & Buy<45 & Net≤-20',color:'var(--red)',bg:'var(--red-dim)',border:'rgba(248,113,113,.3)'},
+  ];
+
+  const renderChips=(tiers)=>tiers.map(t=>{
+    const a=t.test;
+    return`<div class="tier-chip" style="background:${t.bg};color:${t.color};border:1px solid ${t.border};${a?'box-shadow:0 0 12px '+t.border+';transform:scale(1.05)':'opacity:.5'}">${t.name} (${t.range})${a?' ◀':''}</div>`;
+  }).join('');
+
+  const renderComboChips=()=>comboZones.map(z=>{
+    const a=comboName.includes(z.name);
+    return`<div class="tier-chip" style="background:${z.bg};color:${z.color};border:1px solid ${z.border};${a?'box-shadow:0 0 12px '+z.border+';transform:scale(1.05)':'opacity:.5'}">
+      ${z.name}${a?' ◀':''}<br><span style="font-size:.55rem;opacity:.7">${z.cond}</span></div>`;
+  }).join('');
+
+  document.getElementById('tierLegend').innerHTML=`
+    <div style="margin-bottom:14px">
+      <div style="font-size:.72rem;color:var(--emerald);text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:6px">Buy Score: ${buyS.toFixed(1)}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">${renderChips(buyTiers)}</div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:.72rem;color:var(--red);text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:6px">Sell Score: ${sellS.toFixed(1)}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">${renderChips(sellTiers)}</div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:.72rem;color:${nb>=0?'var(--emerald)':'var(--red)'};text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:6px">Net Bias: ${nb>=0?'+':''}${nb.toFixed(1)}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">${renderChips(biasTiers)}</div>
+    </div>
+    <div>
+      <div style="font-size:.72rem;color:${comboColor};text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:6px">Combined Signal: ${comboName}</div>
+      <div style="font-size:.72rem;color:var(--text2);margin-bottom:8px">${comboDesc}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">${renderComboChips()}</div>
+    </div>`;
+}
+
+// ── Methodology (Tabbed Buy/Sell) ──
+function renderMethodology(){
+  const buyCards=[
+    {title:'D1: Return Rank (0–100)',body:'Rolling percentile of multi-period returns (1W–1Y) vs past 252 trading days. High return percentile = price rising vs history = bullish. Weights: 1Y=30%, 6M=25%, 3M=20%, 1M=15%, 1W=10%.'},
+    {title:'D2: Volume Rank (0–100)',body:'Rolling percentile of cumulative volume per period. High volume = strong institutional interest = bullish confirmation. Same weight structure as D1.'},
+    {title:'D3: RSI (0–100)',body:'14-day RSI. Sweet spot 50–70=100 (bullish but not overbought), 40–49=80, 71–80=70, 30–39=60, &gt;80=50 (overbought risk), &lt;30=30.'},
+    {title:'D4: MA Trend (0–100)',body:'Price &gt; MA50 (+35), Price &gt; MA200 (+35), Golden Cross MA50&gt;MA200 (+30). Price above MAs = uptrend confirmed. Max 100.'},
+    {title:'D5: Volatility (0–100)',body:'Annualized 21-day volatility (sqrt 365 for crypto). Lower = better. ≤30%=100, 31–45%=90, 46–60%=70, 61–75%=55, 76–90%=40, 91–120%=25, &gt;120%=10.'},
+    {title:'D6: External Macro (0–100)',body:'BTC is risk-on: DXY weak + VIX low = bullish BTC. BTC up despite strong DXY = very bullish divergence. Raw score ±10 mapped to 0–100.'},
+    {title:'Penalty System',body:'Momentum Reversal (bearish): short-term return flips negative while long-term positive → -5 (mild) or -10 (strong). Death Cross (MA50&lt;MA200) → -5. Scaled ×(100/110). Capped ~-13.6.'},
+    {title:'Pivot × Score',body:'Multi-TF Classic Pivot Points (D1/W1/MN). Price above PP+R1 with strong Buy = Bullish Breakout. Confluence zones = pivots overlapping within 20 pts.'},
+  ];
+  const sellCards=[
+    {title:'D1s: Return Rank (0–100)',body:'FLIPPED percentile — Low return percentile = price dropping harder than history = strong sell signal. ตรงข้ามกับ Buy: ยิ่งตกแรง ยิ่งได้คะแนนสูง.'},
+    {title:'D2s: Volume Rank (0–100)',body:'High volume + negative returns = selling pressure. Volume สูงอย่างเดียวไม่พอ ต้องมี price direction ลงด้วย = institutional selling.'},
+    {title:'D3s: RSI (0–100)',body:'FLIPPED — RSI&lt;30=100 (oversold = strong bearish momentum), RSI 30–39=80, RSI 40–49=60, RSI 50–70=30 (healthy = weak sell), RSI&gt;80=50.'},
+    {title:'D4s: MA Trend (0–100)',body:'FLIPPED — Price &lt; MA50 (+35), Price &lt; MA200 (+35), Death Cross MA50&lt;MA200 (+30). ราคาต่ำกว่า MA = downtrend confirmed. Max 100.'},
+    {title:'D5s: Volatility (0–100)',body:'FLIPPED — High volatility = panic/fear = sell pressure. Crypto thresholds: ≤30%=5, 31–45%=20, 46–60%=40, 61–75%=60, 76–90%=75, 91–120%=90, &gt;120%=100.'},
+    {title:'D6s: External Macro (0–100)',body:'FLIPPED — DXY strong + VIX high = bearish BTC (risk-off environment). Dollar แข็ง + ตลาดกลัว = BTC ถูกเทขาย.'},
+    {title:'Penalty System (Sell)',body:'Bullish Reversal: short-term bounce while long-term bearish → punishes sell signal. Golden Cross (MA50&gt;MA200) → penalty. ตรงข้ามกับ Buy penalty.'},
+    {title:'Pivot × Score',body:'Price below PP+S1 with strong Sell = Bearish Breakdown. ราคาหลุดแนวรับ + Sell momentum แข็ง = ยืนยันขาลง.'},
+  ];
+  const render=cards=>cards.map(c=>`<div class="method-card"><div class="title">${c.title}</div><div class="body">${c.body}</div></div>`).join('');
+  document.getElementById('methBuyGrid').innerHTML=render(buyCards);
+  document.getElementById('methSellGrid').innerHTML=render(sellCards);
+  // old grid
+  document.getElementById('methodGrid').innerHTML=render(buyCards);
+}
+function switchMethTab(tab){
+  const buyG=document.getElementById('methBuyGrid'),sellG=document.getElementById('methSellGrid');
+  const buyT=document.getElementById('methBuyTab'),sellT=document.getElementById('methSellTab');
+  if(tab==='buy'){
+    buyG.style.display='';sellG.style.display='none';
+    buyT.style.background='var(--emerald-dim)';buyT.style.color='var(--emerald)';buyT.style.borderColor='rgba(52,211,153,.3)';
+    sellT.style.background='var(--bg3)';sellT.style.color='var(--text3)';sellT.style.borderColor='var(--border)';
+  } else {
+    buyG.style.display='none';sellG.style.display='';
+    sellT.style.background='var(--red-dim)';sellT.style.color='var(--red)';sellT.style.borderColor='rgba(248,113,113,.3)';
+    buyT.style.background='var(--bg3)';buyT.style.color='var(--text3)';buyT.style.borderColor='var(--border)';
+  }
+}
+
+// ── Net Bias Section ──
+function renderNetBias(){
+  const el=document.getElementById('netBiasSection');
+  if(!DN||!DS){el.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3)">Net Bias data not available</div>';return;}
+  const buyS=parseFloat(DN.Buy_Score),sellS=parseFloat(DN.Sell_Score),nb=parseFloat(DN.Net_Bias);
+  const bt=DN.Bias_Tier,sa=DN.Scenario_Action,ss=DN.Scenario_Signal,si=DN.Scenario_Icon,sz=DN.Scenario_Zone;
+  const sd=DN.Scenario_Detail,sth=DN.Scenario_Thai;
+  const actionCls=sa==='BUY'?'buy':sa==='SELL'?'sell':'hold';
+  // Compute Combined Signal (same logic as hero & tier)
+  let comboLabel='',comboClr='';
+  if(buyS>=75&&sellS<45&&nb>=20){comboLabel='Full Bullish Confirmed';comboClr='var(--emerald)';}
+  else if(buyS>=60&&sellS<45&&nb>=20){comboLabel='Bullish Dominant';comboClr='#8BD4B0';}
+  else if(sellS>=75&&buyS<45&&nb<=-20){comboLabel='Full Bearish Confirmed';comboClr='var(--red)';}
+  else if(sellS>=60&&buyS<45&&nb<=-20){comboLabel='Bearish Dominant';comboClr='#F87171';}
+  else if(buyS>=55&&sellS>=55&&Math.abs(nb)<20){comboLabel='Tug of War';comboClr='var(--gold)';}
+  else if(buyS>=55&&sellS<55&&nb>0){comboLabel='Lean Bullish';comboClr='#8BD4B0';}
+  else if(sellS>=55&&buyS<55&&nb<0){comboLabel='Lean Bearish';comboClr='#F87171';}
+  else if(buyS<55&&sellS<55){comboLabel='Dead Zone';comboClr='var(--text3)';}
+  else{comboLabel='Mixed Signal';comboClr='var(--text3)';}
+  const zoneBg=comboLabel.includes('Bullish')?'var(--emerald-dim)':comboLabel.includes('Bearish')?'var(--red-dim)':comboLabel.includes('Tug')?'var(--gold-dim)':'rgba(255,255,255,.03)';
+  const zoneBorder=comboLabel.includes('Bullish')?'rgba(52,211,153,.25)':comboLabel.includes('Bearish')?'rgba(248,113,113,.25)':'rgba(247,147,26,.25)';
+  const buyPct=Math.max(5,(buyS+sellS>0)?buyS/(buyS+sellS)*100:50);
+  const sellPct=100-buyPct;
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px">
+      <div style="background:var(--emerald-dim);border:1px solid rgba(52,211,153,.2);border-radius:12px;padding:18px;text-align:center">
+        <div style="font-size:.68rem;color:var(--emerald);text-transform:uppercase;letter-spacing:1.5px;font-weight:700">Buy Score</div>
+        <div style="font-family:var(--font-h);font-size:2rem;color:var(--emerald)">${buyS.toFixed(1)}</div>
+        <div style="font-size:.72rem;color:var(--text3)">${DN.Buy_Tier} | Δ ${parseFloat(DN.Buy_Delta)>=0?'+':''}${parseFloat(DN.Buy_Delta).toFixed(1)}</div>
+      </div>
+      <div style="background:${zoneBg};border:1px solid ${zoneBorder};border-radius:12px;padding:18px;text-align:center">
+        <div style="font-size:.68rem;color:${comboClr};text-transform:uppercase;letter-spacing:1.5px;font-weight:700">Net Bias</div>
+        <div style="font-family:var(--font-h);font-size:2rem;color:${nb>=0?'var(--emerald)':'var(--red)'}">${nb>=0?'+':''}${nb.toFixed(1)}</div>
+        <div style="font-size:.72rem;color:${comboClr}">${bt}</div>
+      </div>
+      <div style="background:var(--red-dim);border:1px solid rgba(248,113,113,.2);border-radius:12px;padding:18px;text-align:center">
+        <div style="font-size:.68rem;color:var(--red);text-transform:uppercase;letter-spacing:1.5px;font-weight:700">Sell Score</div>
+        <div style="font-family:var(--font-h);font-size:2rem;color:var(--red)">${sellS.toFixed(1)}</div>
+        <div style="font-size:.72rem;color:var(--text3)">${DN.Sell_Tier} | Δ ${parseFloat(DN.Sell_Delta)>=0?'+':''}${parseFloat(DN.Sell_Delta).toFixed(1)}</div>
+      </div>
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--text3);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:1px">
+        <span style="color:var(--emerald)">BUY ${buyPct.toFixed(0)}%</span><span style="color:var(--red)">SELL ${sellPct.toFixed(0)}%</span>
+      </div>
+      <div style="height:12px;background:rgba(255,255,255,.04);border-radius:6px;overflow:hidden;display:flex">
+        <div style="width:${buyPct}%;background:linear-gradient(90deg,var(--emerald),#34D399);border-radius:6px 0 0 6px;transition:width .8s"></div>
+        <div style="width:${sellPct}%;background:linear-gradient(90deg,#F87171,var(--red));border-radius:0 6px 6px 0;transition:width .8s"></div>
+      </div>
+    </div>
+    <div style="padding:16px 20px;background:${zoneBg};border:1px solid ${zoneBorder};border-radius:12px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:1.3rem">${si}</span>
+        <span style="font-weight:700;font-size:.92rem">${ss}</span>
+        <span style="font-size:.78rem;color:var(--text2)">${sth}</span>
+        <span class="sc-action ${actionCls}" style="margin-left:auto;padding:5px 16px;border-radius:6px;font-size:.72rem;font-weight:800;letter-spacing:1.5px">${sa}</span>
+      </div>
+      <div style="font-size:.78rem;color:var(--text2);margin-top:8px;line-height:1.6">${sd}</div>
+      <div style="font-size:.68rem;color:var(--text3);margin-top:6px"><strong style="color:${comboClr}">${comboLabel}</strong> | ${DN.Scenario_Cond}</div>
+    </div>`;
+}
+
+// ── Dimension Compare (Buy vs Sell) ──
+function renderDimCompare(){
+  const el=document.getElementById('dimCompareGrid');
+  if(!DN||!DS){el.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3)">Comparison data not available</div>';return;}
+  const dims=['D1','D2','D3','D4','D5','D6'];
+  const names=['Return Rank','Volume Rank','RSI','MA Trend','Volatility','Macro'];
+  const colors=dimColors;
+  let html='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">';
+  dims.forEach((d,i)=>{
+    const bv=parseFloat(DN['Buy_'+d]||0),sv=parseFloat(DN['Sell_'+d]||0);
+    const diff=bv-sv;
+    html+=`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 12px">
+      <div style="font-size:.68rem;color:${colors[i]};text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px">${names[i]}</div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <span style="font-size:.78rem;color:var(--emerald);font-weight:600">${bv.toFixed(0)}</span>
+        <span style="font-family:var(--font-h);font-size:.92rem;color:${diff>=0?'var(--emerald)':'var(--red)'}"> ${diff>=0?'+':''}${diff.toFixed(0)}</span>
+        <span style="font-size:.78rem;color:var(--red);font-weight:600">${sv.toFixed(0)}</span>
+      </div>
+      <div style="display:flex;gap:2px;height:8px">
+        <div style="flex:1;background:rgba(52,211,153,.15);border-radius:3px;overflow:hidden;display:flex;justify-content:flex-end">
+          <div style="width:${Math.max(5,bv)}%;background:var(--emerald);border-radius:3px;min-width:4px"></div>
+        </div>
+        <div style="flex:1;background:rgba(248,113,113,.15);border-radius:3px;overflow:hidden;display:flex;justify-content:flex-end">
+          <div style="width:${Math.max(5,sv)}%;background:var(--red);border-radius:3px;min-width:4px"></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:.6rem;color:var(--text3);margin-top:2px"><span>Buy</span><span>Sell</span></div>
+    </div>`;
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+// ── Scenario Reference Table (NEW: Buy+Sell based) ──
+function renderScenarioTable(){
+  const currentSignal=DN?DN.Scenario_Signal:'';
+  const scenarios=[
+    {n:1,icon:'🚀',signal:'Bullish Breakout',thai:'ทะลุแนวต้าน — ยืนยันทั้ง Buy+Sell',
+     cond:'Price ≥ R1 &amp; Buy ≥ 75 &amp; Sell &lt; 45 &amp; Net ≥ +20 &amp; BuyΔ &gt; 0',zone:'BULLISH',combo:'Full Bullish Confirmed',
+     meaning:'ราคาทะลุ R1 + Buy momentum แข็ง + Sell ไม่มีแรง + ยังเร่งตัว → Breakout ยืนยัน ดู R2/R3 เป็นเป้าถัดไป',action:'BUY',actionCls:'buy'},
+    {n:2,icon:'📈',signal:'Bullish but Cooling',thai:'ขาขึ้นแต่ชะลอตัว',
+     cond:'Price ≥ R1 &amp; Buy ≥ 75 &amp; Sell &lt; 45 &amp; Net ≥ +20 &amp; BuyΔ ≤ 0',zone:'BULLISH',combo:'Full Bullish Confirmed',
+     meaning:'ทะลุ R1 + Buy ยังแข็ง + Sell อ่อน แต่ delta เริ่มชะลอ → พิจารณา take-profit บางส่วน',action:'HOLD',actionCls:'hold'},
+    {n:3,icon:'💪',signal:'Bullish Accumulation',thai:'สะสมแรงขาขึ้น',
+     cond:'PP ≤ Price &lt; R1 &amp; Buy ≥ 60 &amp; Sell &lt; 45 &amp; Net ≥ +20',zone:'BULLISH',combo:'Bullish Dominant',
+     meaning:'ราคาเหนือ PP กำลังวิ่งหา R1 + Buy แข็ง Sell อ่อน → สะสมแรงเพื่อ breakout',action:'BUY',actionCls:'buy'},
+    {n:4,icon:'🔄',signal:'Support Bounce',thai:'เด้งจากแนวรับ',
+     cond:'S1 ≤ Price &lt; PP &amp; Buy ≥ 60 &amp; Sell &lt; 45 &amp; Net ≥ +20',zone:'BULLISH',combo:'Bullish Dominant',
+     meaning:'ราคาย่อใต้ PP แต่ Buy แข็ง Sell อ่อนมาก → มีโอกาสเด้งกลับ',action:'BUY',actionCls:'buy'},
+    {n:5,icon:'⚡',signal:'Oversold Recovery',thai:'ร่วงแรงแต่มีแรงฟื้น',
+     cond:'Price &lt; S1 &amp; Buy ≥ 60 &amp; Sell &lt; 45 &amp; Net ≥ +20',zone:'BULLISH',combo:'Bullish Dominant',
+     meaning:'ราคาหลุด S1 แต่ Buy ยังแข็ง + Sell ไม่มีแรง → Divergence อาจ recover',action:'BUY',actionCls:'buy'},
+    {n:6,icon:'📉',signal:'Bearish Breakdown',thai:'หลุดแนวรับ — ยืนยันทั้ง Buy+Sell',
+     cond:'Price &lt; S1 &amp; Sell ≥ 75 &amp; Buy &lt; 45 &amp; Net ≤ -20 &amp; SellΔ &gt; 0',zone:'BEARISH',combo:'Full Bearish Confirmed',
+     meaning:'ราคาหลุด S1 + Sell แข็ง Buy หมดแรง + Sell ยังเร่ง → เสี่ยงลงต่อถึง S2/S3',action:'SELL',actionCls:'sell'},
+    {n:7,icon:'🔻',signal:'Bearish Continuation',thai:'ขาลงต่อเนื่อง',
+     cond:'Price &lt; S1 &amp; Sell ≥ 60 &amp; Buy &lt; 45 &amp; Net ≤ -20',zone:'BEARISH',combo:'Bearish Dominant',
+     meaning:'ราคาใต้ S1 + Sell แข็ง Buy อ่อน → ขาลงยังไม่จบ',action:'SELL',actionCls:'sell'},
+    {n:8,icon:'📊',signal:'Bearish Distribution',thai:'กระจายของขาลง',
+     cond:'S1 ≤ Price &lt; PP &amp; Sell ≥ 60 &amp; Buy &lt; 45 &amp; Net ≤ -20',zone:'BEARISH',combo:'Bearish Dominant',
+     meaning:'ราคาระหว่าง S1-PP + Sell แข็ง Buy อ่อน → กำลังกระจายก่อนลงต่อ',action:'SELL',actionCls:'sell'},
+    {n:9,icon:'⚠️',signal:'Resistance Rejection',thai:'โดนแนวต้านตีกลับ',
+     cond:'Price ≥ PP &amp; Sell ≥ 60 &amp; Buy &lt; 45 &amp; Net ≤ -20',zone:'BEARISH',combo:'Bearish Dominant',
+     meaning:'ราคาเหนือ PP แต่ Sell แข็งกว่า Buy มาก → เสี่ยงโดนตีกลับ',action:'SELL',actionCls:'sell'},
+    {n:10,icon:'🌪️',signal:'Volatile Breakout',thai:'ทะลุแต่ผันผวนสูง',
+     cond:'Price ≥ R1 &amp; Buy ≥ 55 &amp; Sell ≥ 55 &amp; |Net| &lt; 20',zone:'CONFLICT',combo:'Tug of War',
+     meaning:'ราคาเหนือ R1 แต่ทั้ง Buy+Sell มีแรง → ผันผวนสูง อาจทะลุหรือถูก reject รอยืนยัน',action:'HOLD',actionCls:'hold'},
+    {n:11,icon:'⚔️',signal:'Tug of War',thai:'ชักเย่อ — ทั้งสองฝั่งมีแรง',
+     cond:'Buy ≥ 55 &amp; Sell ≥ 55 &amp; |Net| &lt; 20',zone:'CONFLICT',combo:'Tug of War',
+     meaning:'ทั้ง Buy+Sell momentum สูงพอกัน → ตลาดกำลังตัดสินใจ รอฝั่งใดฝั่งหนึ่งชนะก่อน',action:'HOLD',actionCls:'hold'},
+    {n:12,icon:'💤',signal:'Dead Zone',thai:'ไม่มีทิศทาง — รอสัญญาณ',
+     cond:'Buy &lt; 55 &amp; Sell &lt; 55',zone:'NEUTRAL',combo:'Dead Zone',
+     meaning:'ทั้ง Buy+Sell ไม่มีแรง → ตลาดไม่มีทิศทาง รอ breakout',action:'HOLD',actionCls:'hold'},
+    {n:13,icon:'📊',signal:'Cautious Bullish',thai:'เอียง bullish แต่ยังไม่ชัด',
+     cond:'Buy ≥ 55 &amp; Sell &lt; 55 &amp; Net &gt; 0 &amp; (Buy &lt; 60 หรือ Net &lt; +20)',zone:'LEAN BULLISH',combo:'Lean Bullish',
+     meaning:'Buy แข็งกว่า Sell แต่ยังไม่ถึง Bullish Zone → ถือรอ ถ้า Buy เพิ่มจะเข้า Bullish Zone',action:'HOLD',actionCls:'hold'},
+    {n:14,icon:'📉',signal:'Cautious Bearish',thai:'เอียง bearish แต่ยังไม่ชัด',
+     cond:'Sell ≥ 55 &amp; Buy &lt; 55 &amp; Net &lt; 0 &amp; (Sell &lt; 60 หรือ Net &gt; -20)',zone:'LEAN BEARISH',combo:'Lean Bearish',
+     meaning:'Sell แข็งกว่า Buy แต่ยังไม่ถึง Bearish Zone → ระวัง ถ้า Sell เพิ่มจะเข้า Bearish Zone',action:'HOLD',actionCls:'hold'},
+  ];
+
+  const comboColor=c=>c.includes('Full Bullish')?'var(--emerald)':c.includes('Bullish Dominant')?'#8BD4B0':c.includes('Lean Bullish')?'#8BD4B0':c.includes('Full Bearish')?'var(--red)':c.includes('Bearish Dominant')?'#F87171':c.includes('Lean Bearish')?'#F87171':c.includes('Tug')?'var(--gold)':c.includes('Dead')?'var(--text3)':'var(--text3)';
+
+  let html=`<table class="scenario-table">
+    <thead><tr>
+      <th>#</th><th></th><th>Signal / สัญญาณ</th><th>Combined Signal</th><th>เงื่อนไข (Conditions)</th><th>ความหมาย (Interpretation)</th><th>Bias</th>
+    </tr></thead><tbody>`;
+
+  scenarios.forEach(s=>{
+    const isCurrent=s.signal===currentSignal;
+    const zc=s.zone==='BULLISH'?'var(--emerald)':s.zone==='BEARISH'?'var(--red)':s.zone==='CONFLICT'?'var(--orange)':s.zone.includes('LEAN')?'var(--gold)':'var(--text3)';
+    const cc=comboColor(s.combo);
+    html+=`<tr class="${isCurrent?'current-scenario':''}">
+      <td class="sc-num">${s.n}</td>
+      <td class="sc-icon">${s.icon}</td>
+      <td><div class="sc-signal">${s.signal}${isCurrent?'<span class="sc-current-tag">◀ NOW</span>':''}</div><div class="sc-thai">${s.thai}</div></td>
+      <td style="text-align:center"><span style="color:${cc};font-size:.68rem;font-weight:700">${s.combo}</span></td>
+      <td><div class="sc-cond">${s.cond}</div></td>
+      <td class="sc-meaning">${s.meaning}</td>
+      <td style="text-align:center"><span class="sc-action ${s.actionCls}">${s.action}</span></td>
+    </tr>`;
+  });
+
+  html+=`</tbody></table>
+    <div style="margin-top:12px;padding:10px 14px;background:rgba(255,255,255,.02);border-radius:8px;font-size:.72rem;color:var(--text3);line-height:1.6">
+      <strong style="color:var(--gold)">หมายเหตุ:</strong>
+      Scenario ใช้ Buy Score + Sell Score + Net Bias + Pivot Position ร่วมกัน
+      <strong>SELL ต้องมี Sell Score ยืนยัน</strong> ไม่ใช่แค่ Buy อ่อน — ครอบคลุมกว่าระบบเดิมที่ใช้แค่ Buy Score ตัวเดียว
+      ไม่ใช่คำแนะนำการลงทุน — ควรใช้ประกอบกับปัจจัยอื่นเสมอ
+    </div>`;
+
+  document.getElementById('scenarioTable').innerHTML=html;
+}
+// ── Charts ──
+function renderRadarChart(){
+  const ctx=document.getElementById('radarChart').getContext('2d');
+  const radarOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+    tooltip:{callbacks:{label:c=>c.raw.toFixed(1)+' / 100'}}},
+    scales:{r:{min:0,max:100,ticks:{stepSize:25,color:'#6B7280',backdropColor:'transparent',font:{size:10}},grid:{color:'rgba(255,255,255,.06)'},angleLines:{color:'rgba(255,255,255,.06)'},pointLabels:{color:'#9CA3AF',font:{size:11,family:'Instrument Sans',weight:'600'}}}}};
+  new Chart(ctx,{type:'radar',data:{labels:['Return','Volume','RSI','MA','Volatility','Macro'],
+    datasets:[{label:'Buy',data:[fi('D1_ReturnRank'),fi('D2_VolumeRank'),fi('D3_RSI'),fi('D4_MA'),fi('D5_Volatility'),fi('D6_External')],
+      backgroundColor:'rgba(52,211,153,.15)',borderColor:'#34D399',borderWidth:2,pointBackgroundColor:'#34D399',pointBorderColor:'#34D399',pointRadius:5,pointHoverRadius:8}]},
+    options:radarOpts});
+  // Sell radar
+  if(DS){
+    const ctx2=document.getElementById('radarSellChart').getContext('2d');
+    const sf=k=>DS[k]?parseFloat(DS[k]):0;
+    new Chart(ctx2,{type:'radar',data:{labels:['Return','Volume','RSI','MA','Volatility','Macro'],
+      datasets:[{label:'Sell',data:[sf('D1_ReturnRank'),sf('D2_VolumeRank'),sf('D3_RSI'),sf('D4_MA'),sf('D5_Volatility'),sf('D6_External')],
+        backgroundColor:'rgba(248,113,113,.15)',borderColor:'#F87171',borderWidth:2,pointBackgroundColor:'#F87171',pointBorderColor:'#F87171',pointRadius:5,pointHoverRadius:8}]},
+      options:radarOpts});
+  }
+}
+function renderBarChart(){}
+</script>
+</body>
+</html>
