@@ -4,23 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BTC Momentum Dashboard | JP Trust Learning</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js">
-// ═══ THEME TOGGLE ═══
-let currentTheme='light';
-function toggleTheme(){
-  currentTheme=currentTheme==='light'?'dark':'light';
-  document.documentElement.setAttribute('data-theme',currentTheme==='dark'?'dark':'');
-  document.getElementById('themeLabel').textContent=currentTheme==='light'?'Light':'Dark';
-  document.querySelector('.toggle-icon').textContent=currentTheme==='light'?'☀️':'🌙';
-  try{localStorage.setItem('btc-theme',currentTheme);}catch(e){}
-  if(D){Chart.helpers.each(Chart.instances,function(i){i.destroy();});pivotChartInstance=null;render();}
-}
-(function(){
-  try{const s=localStorage.getItem('btc-theme');if(s==='dark'){currentTheme='dark';document.documentElement.setAttribute('data-theme','dark');}}catch(e){}
-  setTimeout(()=>{const l=document.getElementById('themeLabel'),i=document.querySelector('.toggle-icon');
-  if(l)l.textContent=currentTheme==='light'?'Light':'Dark';if(i)i.textContent=currentTheme==='light'?'☀️':'🌙';},0);
-})();
-</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -56,13 +40,12 @@ function toggleTheme(){
 [data-theme="dark"] .header::before{background:radial-gradient(ellipse,rgba(247,147,26,.08) 0%,rgba(247,147,26,.02) 40%,transparent 70%)}
 [data-theme="dark"] .header h1{background:linear-gradient(135deg,#F7931A,#FFB347,#F7931A,#E8850F);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 [data-theme="dark"] .status-indicator{background:rgba(255,255,255,.03)}
-[data-theme="dark"] .scenario-table tbody tr.current-scenario{background:rgba(247,147,26,.08)}
 [data-theme="dark"] .dim-card .bar{background:rgba(255,255,255,.06)}
 [data-theme="dark"] .sc-action.buy,[data-theme="dark"] .sc-action.sell,[data-theme="dark"] .sc-action.hold{color:#0B0E11}
 [data-theme="dark"] .action-badge.buy,[data-theme="dark"] .action-badge.sell,[data-theme="dark"] .action-badge.hold{color:#0B0E11}
 .theme-toggle{display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 16px;border-radius:50px;border:1px solid var(--border2);background:var(--bg2);font-size:.78rem;font-weight:600;color:var(--text2);transition:all .3s;user-select:none}
 .theme-toggle:hover{border-color:var(--gold);color:var(--text)}
-.theme-toggle .toggle-icon{font-size:1rem;transition:transform .3s}
+.theme-toggle .toggle-icon{font-size:1rem}
 [data-theme="dark"] .theme-toggle .toggle-icon{transform:rotate(180deg)}
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -1080,11 +1063,11 @@ function renderTierLegend(){
     'Full Bearish Confirmed':{d:'Sell แข็ง + Buy หมดแรง + Net ห่างชัด → ขาลงยืนยันครบ',c:'var(--red)',bg:'var(--red-dim)',b:'rgba(248,113,113,.3)'},
     'Bearish Dominant':{d:'Sell แข็งพอ + Buy อ่อน + Net เอียง Sell → ขาลงมีน้ำหนัก',c:'#F87171',bg:'rgba(248,113,113,.08)',b:'rgba(248,113,113,.2)'},
     'Tug of War':{d:'ทั้ง Buy+Sell มีแรงพอกัน + Net ไม่ห่าง → ชักเย่อ รอฝั่งใดชนะ',c:'var(--gold)',bg:'var(--gold-dim)',b:'rgba(247,147,26,.3)'},
-    'Lean Bullish':{d:'Buy แข็งกว่า + Sell ไม่มีแรง แต่ Net ยังไม่ห่างพอ → เอียง Buy แต่ยังไม่ยืนยัน',c:'#8BD4B0',bg:'rgba(52,211,153,.05)',b:'rgba(52,211,153,.15)'},
-    'Lean Bearish':{d:'Sell แข็งกว่า + Buy ไม่มีแรง แต่ Net ยังไม่ห่างพอ → เอียง Sell แต่ยังไม่ยืนยัน',c:'#F87171',bg:'rgba(248,113,113,.05)',b:'rgba(248,113,113,.15)'},
-    'Dead Zone':{d:'ทั้ง Buy+Sell ไม่มีแรง → ตลาดไม่มีทิศทาง รอ breakout',c:'var(--text3)',bg:'rgba(156,163,175,.05)',b:'rgba(156,163,175,.15)'},
+    'Lean Bullish':{d:'Buy แข็งกว่า แต่ Net ยังไม่ห่างพอ → เอียง Buy',c:'#8BD4B0',bg:'rgba(52,211,153,.05)',b:'rgba(52,211,153,.15)'},
+    'Lean Bearish':{d:'Sell แข็งกว่า แต่ Net ยังไม่ห่างพอ → เอียง Sell',c:'#F87171',bg:'rgba(248,113,113,.05)',b:'rgba(248,113,113,.15)'},
+    'Dead Zone':{d:'ทั้ง Buy+Sell ไม่มีแรง → รอ breakout',c:'var(--text3)',bg:'rgba(156,163,175,.05)',b:'rgba(156,163,175,.15)'},
   };
-  const cl=comboLookup[comboRawT]||{d:'สัญญาณผสม ไม่ตรงเงื่อนไขชัด → ระวังและรอยืนยัน',c:'var(--text3)',bg:'rgba(156,163,175,.05)',b:'rgba(156,163,175,.15)'};
+  const cl=comboLookup[comboRawT]||{d:'สัญญาณผสม',c:'var(--text3)',bg:'rgba(156,163,175,.05)',b:'rgba(156,163,175,.15)'};
   const icn=comboRawT.includes('Bullish')?'🟢':comboRawT.includes('Bearish')?'🔴':comboRawT.includes('Tug')?'🟡':'⚪';
   comboName=icn+' '+comboRawT;comboDesc=cl.d;comboColor=cl.c;comboBg=cl.bg;comboBorder=cl.b; else {
     comboName='⚪ Mixed Signal';comboDesc='สัญญาณผสม ไม่ตรงเงื่อนไขชัด → ระวังและรอยืนยัน';
@@ -1371,7 +1354,8 @@ function renderRadarChart(){
   }
 }
 function renderBarChart(){}
-
+</script>
+<script>
 // ═══ THEME TOGGLE ═══
 let currentTheme='light';
 function toggleTheme(){
