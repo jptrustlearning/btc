@@ -1,0 +1,95 @@
+name: Daily BTC Momentum Score
+
+on:
+  # Run after price update completes
+  workflow_run:
+    workflows: ["Daily BTC Price Update"]
+    types: [completed]
+  # Manual trigger
+  workflow_dispatch:
+
+jobs:
+  momentum-score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Only run if price update succeeded (or manual trigger)
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.BTC_PAT }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pandas numpy openpyxl yfinance requests
+
+      - name: Update macro data (DXY + VIX)
+        run: |
+          python3 -c "
+          import yfinance as yf
+          import pandas as pd
+          from datetime import datetime, timedelta
+
+          for symbol, filename in [('DX-Y.NYB', 'dxy_prices.csv'), ('^VIX', 'vix_prices.csv')]:
+              try:
+                  print(f'Fetching {symbol}...')
+                  df_existing = pd.read_csv(filename, encoding='utf-8-sig')
+                  df_existing.columns = ['Date','Open','High','Low','Close','Volume']
+                  df_existing['Date'] = pd.to_datetime(df_existing['Date'])
+                  last_date = df_existing['Date'].max()
+                  start = (last_date + timedelta(days=1)).strftime('%Y-%m-%d')
+                  
+                  t = yf.Ticker(symbol)
+                  df_new = t.history(start=start, end=datetime.now().strftime('%Y-%m-%d'))
+                  if df_new.empty:
+                      print(f'  {symbol}: no new data')
+                      continue
+                  
+                  df_new = df_new[['Open','High','Low','Close','Volume']].reset_index()
+                  if hasattr(df_new['Date'].dtype, 'tz') and df_new['Date'].dt.tz is not None:
+                      df_new['Date'] = df_new['Date'].dt.tz_localize(None)
+                  for col in ['Open','High','Low','Close']:
+                      df_new[col] = df_new[col].round(2)
+                  df_new['Volume'] = df_new['Volume'].fillna(0).astype(int)
+                  
+                  df_all = pd.concat([df_existing, df_new], ignore_index=True)
+                  df_all['Date'] = pd.to_datetime(df_all['Date'])
+                  df_all = df_all.drop_duplicates(subset='Date', keep='last').sort_values('Date').reset_index(drop=True)
+                  
+                  df_out = df_all.copy()
+                  df_out['Date'] = df_out['Date'].dt.strftime('%Y-%m-%d')
+                  df_out.columns = ['วันที่','ราคาเปิด','ราคาสูงสุด','ราคาต่ำสุด','ราคาปิด','ปริมาณซื้อขาย']
+                  df_out.to_csv(filename, index=False, encoding='utf-8-sig')
+                  print(f'  {symbol}: +{len(df_new)} rows → {len(df_all)} total')
+              except Exception as e:
+                  print(f'  {symbol} failed: {e}')
+          "
+
+      - name: Run Buy Score
+        run: python3 btc_momentum_buy.py
+
+      - name: Run Sell Score
+        run: python3 btc_momentum_sell.py
+
+      - name: Run Net Bias
+        run: python3 btc_momentum_net.py
+
+      - name: Commit and push
+        run: |
+          git config user.email "jptrustlearning@users.noreply.github.com"
+          git config user.name "JP Trust Learning"
+          git add output_momentum_btc*.csv
+          git add dxy_prices.csv vix_prices.csv
+          git add BTC_Momentum_v3.0.xlsx
+          git diff --cached --quiet || (
+            TIMESTAMP=$(date -u +"%d/%m/%Y %H:%M UTC")
+            git commit -m "🪙 BTC Momentum Score v3.0 — ${TIMESTAMP}"
+            git push
+          )
